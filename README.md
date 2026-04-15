@@ -28,7 +28,7 @@ filled in module-by-module.
 | visual        | Stub           |
 | keyboard      | Working (4 rules) |
 | forms         | Working (4 rules) |
-| responsive    | Stub           |
+| responsive    | Working (3 rules) |
 | screen_reader | Stub (Windows-only when built)|
 
 ## Quick start (local)
