@@ -8,6 +8,7 @@ When the server is running locally, interactive OpenAPI docs are at `http://loca
 - [Endpoints](#endpoints)
   - [POST /audit — queue a full audit](#post-audit--queue-a-full-audit)
   - [GET /audit/{job_id} — fetch results](#get-auditjob_id--fetch-results)
+  - [GET /audit/{job_id}/html — HTML report](#get-auditjob_idhtml--html-report)
   - [DELETE /audit/{job_id} — delete results](#delete-auditjob_id--delete-results)
   - [POST /audit/quick — synchronous axe-only scan](#post-auditquick--synchronous-axe-only-scan)
   - [GET /health — liveness and capability](#get-health--liveness-and-capability)
@@ -25,7 +26,41 @@ When the server is running locally, interactive OpenAPI docs are at `http://loca
 
 ## Authentication
 
-None. The server is intended to run on a trusted network (localhost, private VPC, reverse-proxied behind your own auth). Add your own auth middleware if exposing to the public internet.
+Disabled by default — the server is intended for trusted networks. Set the
+`API_KEYS` environment variable to a comma-separated list of keys to turn it
+on:
+
+```bash
+export API_KEYS="dev-key-abc,prod-key-xyz"
+```
+
+When enabled, every endpoint **except** `/health`, `/docs`, `/redoc`, and
+`/openapi.json` requires either an `X-API-Key` header or a `Authorization:
+Bearer <key>` header. A missing or invalid key returns `401 {"detail":
+"Invalid or missing API key"}`.
+
+## Rate limiting
+
+Off by default. Set `RATE_LIMIT_PER_MIN=60` (or any positive integer) to
+enable a per-key sliding-window limit. When a caller exceeds the budget
+the server returns `429 {"detail": "Rate limit exceeded"}` with a
+`Retry-After` header in seconds.
+
+The limiter keys by API key ID when auth is enabled, and by client IP
+otherwise. `/health` and the docs endpoints are always exempt.
+
+## Observability
+
+Every request gets an `X-Request-ID` header on the response. Callers may
+send their own via the same header to correlate with upstream traces;
+otherwise the server generates a fresh UUID. Log records emit the
+request ID in brackets:
+
+```
+2026-04-15T17:13:50 INFO [f54040e205ac] a11y_audit: GET /audit/xyz/html -> 200 (23 ms)
+```
+
+Set `LOG_FORMAT=json` for line-per-record JSON output instead.
 
 ---
 
@@ -112,6 +147,34 @@ Possible `status` values:
 ```bash
 curl -s http://localhost:8000/audit/a1b2c3d4-e5f6-7890-abcd-ef1234567890 | jq '.status, .summary'
 ```
+
+---
+
+### GET /audit/{job_id}/html — HTML report
+
+Returns a standalone, human-readable HTML report for the audit. Useful for
+sharing with designers or stakeholders who don't want to read JSON.
+
+The template ships as `templates/report.html.j2` — Jinja2, autoescape on
+(all element snippets are safe to render). Dark-mode aware via
+`prefers-color-scheme`. Single file, no external assets.
+
+**Status codes:**
+
+- `200 OK` — report rendered
+- `404 Not Found` — no such `job_id`
+
+**Example:**
+
+```bash
+curl -s http://localhost:8000/audit/a1b2c3d4-e5f6/html > report.html
+open report.html
+```
+
+The page contains: score + grade, per-severity counts, per-WCAG-principle
+breakdown, per-module status table, and every issue (each collapsible,
+first one open) with selector, element snippet, WCAG criterion, fix
+suggestion, and expandable raw details.
 
 ---
 

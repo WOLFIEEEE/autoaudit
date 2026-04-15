@@ -21,6 +21,10 @@ All server/worker configuration is env-var driven. See [server/config.py](../ser
 | `SKIP_NVDA`           | `""` (false)                                                 | When `1`/`true`/`yes`, skip Path B (real NVDA) even on Windows. Non-Windows hosts always skip |
 | `CACHE_TTL_SECONDS`   | `900`                                                        | Redis cache TTL for same-URL audit results |
 | `MAX_AUDIT_SECONDS`   | `180`                                                        | Celery soft time limit. Hard limit is +30s |
+| `API_KEYS`            | `""` (disabled)                                              | Comma-separated list of accepted keys. When set, every endpoint except `/health` and the docs endpoints requires `X-API-Key` or `Authorization: Bearer <key>` |
+| `RATE_LIMIT_PER_MIN`  | `0` (disabled)                                               | Per-key sliding-window rate limit. Key is the API key ID when auth is on, client IP otherwise |
+| `LOG_LEVEL`           | `INFO`                                                       | Standard logging level name |
+| `LOG_FORMAT`          | `text`                                                       | `json` for line-per-record structured logs, anything else for human-readable |
 
 ### Celery worker knobs
 

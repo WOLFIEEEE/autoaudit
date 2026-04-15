@@ -1,0 +1,39 @@
+# Source control
+.git/
+.gitignore
+.github/
+
+# Python build artifacts
+__pycache__/
+*.py[cod]
+*.egg-info/
+.pytest_cache/
+.mypy_cache/
+
+# Virtualenvs
+.venv/
+venv/
+env/
+
+# Local data
+data/
+*.db
+*.sqlite
+*.sqlite3
+
+# Tests and fixtures (not needed in the runtime image)
+tests/
+pytest.ini
+
+# Docs
+docs/
+README.md
+
+# Editor / OS
+.idea/
+.vscode/
+.DS_Store
+
+# Environment
+.env
+.env.*

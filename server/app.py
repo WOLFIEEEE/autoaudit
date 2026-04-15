@@ -7,18 +7,30 @@ import platform
 import time
 import uuid
 from contextlib import asynccontextmanager
+from pathlib import Path
 
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, Request
+from fastapi.responses import HTMLResponse
+from jinja2 import Environment, FileSystemLoader
 
 from server import cache, database
 from server.config import CONFIG
+from server.middleware import (
+    ApiKeyMiddleware,
+    RateLimitMiddleware,
+    RequestIdMiddleware,
+    configure_logging,
+)
 from server.models import AuditRequest, AuditStatus
 
 log = logging.getLogger(__name__)
 
+_TEMPLATES_DIR = Path(__file__).resolve().parent.parent / "templates"
+
 
 @asynccontextmanager
 async def _lifespan(app: FastAPI):
+    configure_logging()
     database.init_db()
     yield
 
@@ -34,7 +46,23 @@ def create_app() -> FastAPI:
         lifespan=_lifespan,
     )
 
-    @app.get("/health")
+    # Outer-first application order — RequestId wraps everything so even
+    # auth failures get a request ID. Rate limiting comes after auth so
+    # it can key off the API-key ID we stash in request.state.
+    app.add_middleware(RateLimitMiddleware)
+    app.add_middleware(ApiKeyMiddleware)
+    app.add_middleware(RequestIdMiddleware)
+
+    jinja = Environment(
+        loader=FileSystemLoader(str(_TEMPLATES_DIR)),
+        # Unconditional autoescape: templates here are HTML reports and we
+        # render untrusted content (html_snippets, URLs) into them.
+        # select_autoescape matches by final extension — our files end in
+        # .j2 which wouldn't match a naive ["html"] list.
+        autoescape=True,
+    )
+
+    @app.get("/health", tags=["meta"])
     def health() -> dict:
         return {
             "status": "ok",
@@ -43,7 +71,7 @@ def create_app() -> FastAPI:
             "skip_nvda_default": CONFIG.default_skip_nvda,
         }
 
-    @app.post("/audit", response_model=AuditStatus)
+    @app.post("/audit", response_model=AuditStatus, tags=["audit"])
     def start_audit(request: AuditRequest) -> AuditStatus:
         cached = cache.get_cached_result(request.url)
         if cached:
@@ -57,8 +85,6 @@ def create_app() -> FastAPI:
         now = time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())
         database.create_job(job_id, request.url, now)
 
-        # Queue via Celery. If Redis/worker unavailable the task just sits in
-        # the DB as 'queued' — the error surfaces on poll.
         try:
             from server.tasks import run_audit_task
 
@@ -72,6 +98,7 @@ def create_app() -> FastAPI:
             database.update_job_status(job_id, "failed", now, error=f"enqueue failed: {exc}")
             raise HTTPException(503, "Task queue unavailable. Is Redis/Celery running?")
 
+        log.info("queued audit %s for %s", job_id, request.url)
         return AuditStatus(
             job_id=job_id,
             status="queued",
@@ -79,20 +106,29 @@ def create_app() -> FastAPI:
             poll_url=f"/audit/{job_id}",
         )
 
-    @app.get("/audit/{job_id}")
+    @app.get("/audit/{job_id}", tags=["audit"])
     def get_audit(job_id: str) -> dict:
         result = database.get_audit_result(job_id)
         if not result:
             raise HTTPException(404, "Audit not found")
         return result
 
-    @app.delete("/audit/{job_id}")
+    @app.get("/audit/{job_id}/html", response_class=HTMLResponse, tags=["audit"])
+    def get_audit_html(job_id: str) -> HTMLResponse:
+        """Human-readable HTML report for a completed audit."""
+        result = database.get_audit_result(job_id)
+        if not result:
+            raise HTTPException(404, "Audit not found")
+        template = jinja.get_template("report.html.j2")
+        return HTMLResponse(template.render(audit=result))
+
+    @app.delete("/audit/{job_id}", tags=["audit"])
     def delete_audit(job_id: str) -> dict:
         if not database.delete_audit_result(job_id):
             raise HTTPException(404, "Audit not found")
         return {"deleted": job_id}
 
-    @app.post("/audit/quick")
+    @app.post("/audit/quick", tags=["audit"])
     def quick_audit(request: AuditRequest) -> dict:
         """Synchronous lightweight scan — axe-core only. No queue required."""
         from audit.orchestrator import run_quick_audit

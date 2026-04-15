@@ -107,13 +107,14 @@ The compose file spins up three containers: `server`, `worker`, and `redis`. SQL
 
 Five endpoints. Full schemas, examples, and error shapes in [docs/api.md](docs/api.md).
 
-| Method | Path                  | Purpose                                                        |
-|--------|-----------------------|----------------------------------------------------------------|
-| POST   | `/audit`              | Queue a full audit (returns `job_id`, run asynchronously)      |
-| GET    | `/audit/{job_id}`     | Fetch status + results for a queued audit                      |
-| DELETE | `/audit/{job_id}`     | Delete stored results                                          |
-| POST   | `/audit/quick`        | Synchronous axe-core-only scan (< 10 s typical)                |
-| GET    | `/health`             | Liveness + platform/NVDA capability                            |
+| Method | Path                         | Purpose                                                    |
+|--------|------------------------------|------------------------------------------------------------|
+| POST   | `/audit`                     | Queue a full audit (returns `job_id`, run asynchronously)  |
+| GET    | `/audit/{job_id}`            | Fetch status + results for a queued audit                  |
+| GET    | `/audit/{job_id}/html`       | Render a human-readable HTML report                        |
+| DELETE | `/audit/{job_id}`            | Delete stored results                                      |
+| POST   | `/audit/quick`               | Synchronous axe-core-only scan (< 10 s typical)            |
+| GET    | `/health`                    | Liveness + platform/NVDA capability                        |
 
 Minimal request:
 
@@ -216,8 +217,6 @@ main.py                 Uvicorn entry point
 scripts/
     fetch_axe.py        Vendor axe-core into ./vendor/
     run_worker.py       Start a Celery worker
-config/
-    default.yaml        Default option values (reference; not yet loaded)
 docs/
     api.md              Endpoint-by-endpoint API reference
     rules.md            Every rule, WCAG mapping, severity, fix suggestion

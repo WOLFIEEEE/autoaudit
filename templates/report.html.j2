@@ -1,0 +1,214 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Accessibility audit — {{ audit.url }}</title>
+    <style>
+        :root {
+            --bg: #fafafa;
+            --fg: #1a1a1a;
+            --muted: #555;
+            --border: #d9d9d9;
+            --accent: #004c99;
+            --critical: #b00020;
+            --serious: #d07000;
+            --moderate: #a57c00;
+            --minor: #5a5a5a;
+            --pass: #1a7f37;
+        }
+        @media (prefers-color-scheme: dark) {
+            :root {
+                --bg: #121212;
+                --fg: #f2f2f2;
+                --muted: #aaa;
+                --border: #333;
+                --accent: #6aa5ff;
+                --critical: #ff6a7f;
+                --serious: #ffb66a;
+                --moderate: #e0c96a;
+                --minor: #bbb;
+                --pass: #7ad48c;
+            }
+        }
+        * { box-sizing: border-box; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            max-width: 960px;
+            margin: 2rem auto;
+            padding: 0 1rem 3rem;
+            background: var(--bg);
+            color: var(--fg);
+            line-height: 1.5;
+        }
+        a { color: var(--accent); }
+        h1 { margin-bottom: 0.25rem; }
+        h1 a { word-break: break-all; }
+        .meta { color: var(--muted); font-size: 0.9rem; margin-bottom: 2rem; }
+        .summary {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+            gap: 1rem;
+            margin: 1.5rem 0;
+            padding: 1rem;
+            border: 1px solid var(--border);
+            border-radius: 8px;
+        }
+        .summary .stat { display: flex; flex-direction: column; }
+        .summary .value { font-size: 2rem; font-weight: 600; }
+        .summary .label { font-size: 0.85rem; color: var(--muted); text-transform: uppercase; letter-spacing: 0.05em; }
+        .grade-A { color: var(--pass); }
+        .grade-B { color: var(--pass); }
+        .grade-C { color: var(--moderate); }
+        .grade-D { color: var(--serious); }
+        .grade-F { color: var(--critical); }
+        table { width: 100%; border-collapse: collapse; margin: 1rem 0; }
+        th, td { padding: 0.5rem 0.75rem; text-align: left; border-bottom: 1px solid var(--border); vertical-align: top; }
+        th { font-size: 0.85rem; text-transform: uppercase; letter-spacing: 0.05em; color: var(--muted); }
+        .severity {
+            display: inline-block;
+            padding: 0.1rem 0.5rem;
+            border-radius: 4px;
+            font-size: 0.8rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            color: white;
+        }
+        .severity.critical { background: var(--critical); }
+        .severity.serious  { background: var(--serious); }
+        .severity.moderate { background: var(--moderate); color: #1a1a1a; }
+        .severity.minor    { background: var(--minor); }
+        details {
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            margin: 0.5rem 0;
+            padding: 0.5rem 0.75rem;
+        }
+        details[open] { background: rgba(0, 76, 153, 0.04); }
+        summary {
+            cursor: pointer;
+            font-weight: 500;
+            display: flex;
+            gap: 0.5rem;
+            align-items: center;
+        }
+        summary > .rule { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 0.85rem; color: var(--muted); }
+        details > *:not(summary) { margin-top: 0.75rem; }
+        pre {
+            background: rgba(0, 0, 0, 0.04);
+            padding: 0.75rem;
+            border-radius: 4px;
+            overflow-x: auto;
+            font-size: 0.85rem;
+            line-height: 1.4;
+        }
+        @media (prefers-color-scheme: dark) {
+            pre { background: rgba(255, 255, 255, 0.04); }
+        }
+        dl { display: grid; grid-template-columns: max-content 1fr; gap: 0.25rem 1rem; }
+        dt { color: var(--muted); font-size: 0.85rem; }
+        .fix { border-left: 3px solid var(--accent); padding-left: 0.75rem; font-style: italic; }
+        .modules-table td:last-child { text-align: right; }
+        .muted { color: var(--muted); }
+    </style>
+</head>
+<body>
+    <h1>Accessibility audit</h1>
+    <p class="meta">
+        <a href="{{ audit.url }}">{{ audit.url }}</a>
+        &middot; {{ audit.timestamp or '' }}
+        {% if audit.duration_seconds %}&middot; {{ '%.1f'|format(audit.duration_seconds) }} s{% endif %}
+        {% if audit.status %}&middot; status: <strong>{{ audit.status }}</strong>{% endif %}
+        &middot; <a href="/audit/{{ audit.job_id }}">raw JSON</a>
+    </p>
+
+    {% set summary = audit.summary or {} %}
+    <section class="summary" aria-label="Summary">
+        <div class="stat">
+            <span class="label">Score</span>
+            <span class="value grade-{{ summary.grade or 'F' }}">{{ summary.score if summary.score is not none else '—' }}</span>
+        </div>
+        <div class="stat">
+            <span class="label">Grade</span>
+            <span class="value grade-{{ summary.grade or 'F' }}">{{ summary.grade or '—' }}</span>
+        </div>
+        <div class="stat">
+            <span class="label">Total issues</span>
+            <span class="value">{{ summary.total_issues or 0 }}</span>
+        </div>
+        {% for sev in ['critical', 'serious', 'moderate', 'minor'] %}
+        <div class="stat">
+            <span class="label">{{ sev|capitalize }}</span>
+            <span class="value">{{ (summary.by_severity or {}).get(sev, 0) }}</span>
+        </div>
+        {% endfor %}
+    </section>
+
+    <h2>By WCAG principle</h2>
+    <table>
+        <thead><tr><th>Principle</th><th>Score</th><th>Issues</th></tr></thead>
+        <tbody>
+            {% for principle, data in (summary.by_principle or {}).items() %}
+            <tr>
+                <td>{{ principle|capitalize }}</td>
+                <td>{{ data.score }}</td>
+                <td>{{ data.issues }}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+
+    <h2>Modules</h2>
+    <table class="modules-table">
+        <thead><tr><th>Module</th><th>Status</th><th>Issues</th><th>Duration</th></tr></thead>
+        <tbody>
+            {% for name, m in (audit.modules or {}).items() %}
+            <tr>
+                <td>{{ name }}</td>
+                <td>
+                    {% if m.ran %}ran{% elif m.error %}<span class="severity critical">error</span>{% else %}skipped{% endif %}
+                    {% if m.error %}<span class="muted"> — {{ m.error }}</span>{% endif %}
+                </td>
+                <td>{{ m.issues_found or 0 }}</td>
+                <td>{{ '%.2f'|format(m.duration_seconds or 0) }} s</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+
+    <h2>Issues <span class="muted" style="font-weight: normal;">({{ audit.issues|length }})</span></h2>
+    {% if not audit.issues %}
+    <p class="muted">No issues reported.</p>
+    {% endif %}
+    {% for issue in audit.issues %}
+    <details{% if loop.first %} open{% endif %}>
+        <summary>
+            <span class="severity {{ issue.severity }}">{{ issue.severity }}</span>
+            <span>{{ issue.title }}</span>
+            <span class="rule">{{ issue.rule }}</span>
+        </summary>
+        <p>{{ issue.description }}</p>
+        <dl>
+            <dt>Module</dt><dd>{{ issue.module }}</dd>
+            <dt>Principle</dt><dd>{{ issue.principle or '—' }}</dd>
+            <dt>WCAG</dt><dd>{{ (issue.wcag_criteria or [])|join(', ') or '—' }}</dd>
+            {% if issue.element and issue.element.selector %}
+            <dt>Selector</dt><dd><code>{{ issue.element.selector }}</code></dd>
+            {% endif %}
+            {% if issue.element and issue.element.html_snippet %}
+            <dt>Element</dt><dd><pre>{{ issue.element.html_snippet }}</pre></dd>
+            {% endif %}
+        </dl>
+        {% if issue.fix_suggestion %}
+        <p class="fix"><strong>Fix:</strong> {{ issue.fix_suggestion }}</p>
+        {% endif %}
+        {% if issue.details %}
+        <details>
+            <summary class="muted">details</summary>
+            <pre>{{ issue.details | tojson(indent=2) }}</pre>
+        </details>
+        {% endif %}
+    </details>
+    {% endfor %}
+</body>
+</html>
