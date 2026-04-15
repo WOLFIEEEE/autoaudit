@@ -21,10 +21,10 @@ filled in module-by-module.
 | axe-core      | Working        |
 | Scoring       | Working        |
 | Deduplication | Working        |
-| structure     | Stub           |
-| aria          | Stub           |
-| media         | Stub           |
-| cognitive     | Stub           |
+| structure     | Working (6 rules) |
+| aria          | Working (4 rules) |
+| media         | Working (5 rules) |
+| cognitive     | Working (3 rules) |
 | visual        | Stub           |
 | keyboard      | Stub           |
 | forms         | Stub           |
