@@ -27,7 +27,7 @@ filled in module-by-module.
 | cognitive     | Working (3 rules) |
 | visual        | Stub           |
 | keyboard      | Working (4 rules) |
-| forms         | Stub           |
+| forms         | Working (4 rules) |
 | responsive    | Stub           |
 | screen_reader | Stub (Windows-only when built)|
 
