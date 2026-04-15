@@ -10,15 +10,19 @@ NVDAController class below is the placeholder entry point; see the project
 design doc for the add-on and worker architecture.
 
 Rules implemented (Path A):
-- sr-silent-focusable       WCAG 4.1.2  critical   focusable interactive element has no accessible name
-- sr-generic-interactive    WCAG 4.1.2  serious    focusable element exposed with role="generic" (no semantic role)
+- sr-silent-interactive     WCAG 4.1.2  critical   interactive-role node has no accessible name
 - sr-empty-heading          WCAG 1.3.1  serious    heading with no accessible name
 - sr-duplicate-landmark     WCAG 1.3.1  moderate   two or more landmarks share role and have no distinguishing name
 - sr-dialog-no-name         WCAG 4.1.2  serious    dialog / alertdialog with no accessible name
 
-Caveats documented for users: Chromium's tree differs from real NVDA output
-in verbosity rules, browse-mode reading order, and punctuation. Real NVDA
-testing stacks on top of these rules when the Path B worker is available.
+Caveat: Playwright's accessibility.snapshot() does not expose a `focusable`
+flag. Rules that depend on focus context (e.g. detecting a <div tabindex=0>
+with no semantic role) live in the keyboard module instead, where we walk
+focus directly.
+
+Chromium's tree also differs from real NVDA output in verbosity rules,
+browse-mode reading order, and punctuation. Real NVDA testing (Path B)
+stacks additional rules on top when available.
 """
 
 from __future__ import annotations
@@ -57,11 +61,6 @@ INTERACTIVE_ROLES = frozenset(
         "spinbutton",
     }
 )
-
-# Roles Chromium emits for elements that have no real semantic role.
-# A focusable element exposed this way is a <div tabindex=0> / <span onclick>
-# that screen readers can't classify for the user.
-GENERIC_ROLES = frozenset({"generic", "GenericContainer", "group", "none", "presentation"})
 
 # Landmark roles per ARIA spec (and HTML sectioning equivalents).
 LANDMARK_ROLES = frozenset(
@@ -116,19 +115,19 @@ def analyze(tree: dict[str, Any] | None) -> list[dict[str, Any]]:
     for node in nodes:
         role = (node.get("role") or "").lower()
         name = (node.get("name") or "").strip()
-        focusable = bool(node.get("focusable"))
+        disabled = bool(node.get("disabled"))
 
-        # 1. focusable interactive element with no accessible name
-        if focusable and role in INTERACTIVE_ROLES and not name:
+        # 1. interactive-role node with no accessible name
+        if role in INTERACTIVE_ROLES and not name and not disabled:
             issues.append(
                 make_issue(
-                    issue_id=f"sr-silent-focusable-{_selector_hint(node)}",
+                    issue_id=f"sr-silent-interactive-{_selector_hint(node)}",
                     module="screen_reader",
-                    rule="sr-silent-focusable",
+                    rule="sr-silent-interactive",
                     severity="critical",
                     principle="robust",
                     wcag=["4.1.2"],
-                    title=f'Focusable <{role}> has no accessible name',
+                    title=f'<{role}> has no accessible name',
                     description=(
                         "Chromium's accessibility tree exposes this element as a "
                         f"{role} but with no name. Screen readers will announce the "
@@ -143,32 +142,7 @@ def analyze(tree: dict[str, Any] | None) -> list[dict[str, Any]]:
                 )
             )
 
-        # 2. focusable with only a generic role = <div tabindex=0> without role attribute
-        if focusable and role in GENERIC_ROLES:
-            issues.append(
-                make_issue(
-                    issue_id=f"sr-generic-interactive-{_selector_hint(node)}",
-                    module="screen_reader",
-                    rule="sr-generic-interactive",
-                    severity="serious",
-                    principle="robust",
-                    wcag=["4.1.2"],
-                    title="Focusable element has no semantic role (exposed as generic)",
-                    description=(
-                        "The element is in the tab order but screen readers cannot "
-                        "tell users what kind of control it is. This is the classic "
-                        "<div onclick> / <span tabindex> anti-pattern."
-                    ),
-                    selector=_selector_hint(node),
-                    details={"role": role, "tree_name": name},
-                    fix=(
-                        "Use a semantic element (<button>, <a>), or add an appropriate "
-                        'role (role="button") and keyboard handlers.'
-                    ),
-                )
-            )
-
-        # 3. empty heading
+        # 3. empty heading (numbered in the rule list above)
         if role == "heading" and not name:
             issues.append(
                 make_issue(

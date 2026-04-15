@@ -1,0 +1,103 @@
+<!-- Fixture page with deliberate accessibility failures covering every module.
+     The e2e test loads this and asserts that the expected rules fire.
+     Keep issues labeled with data-issue="rule-name" comments so diffs stay readable.
+-->
+<!doctype html>
+<html><!-- structure-html-lang: no lang attribute -->
+<head>
+    <!-- structure-title-missing: empty <title> -->
+    <title></title>
+    <!-- responsive-viewport-zoom-disabled: user-scalable=no -->
+    <meta name="viewport" content="width=device-width, user-scalable=no">
+    <style>
+        body { font-family: sans-serif; }
+        /* visual-tiny-text: 7px paragraph */
+        p.note { font-size: 7px; }
+        /* keyboard-no-focus-indicator: button with outline:none and no replacement */
+        button.bare:focus { outline: none; box-shadow: none; }
+        /* visual-infinite-animation */
+        @keyframes spin { to { transform: rotate(360deg); } }
+        .spinner { animation: spin 2s linear infinite; width: 30px; height: 30px; background: red; }
+        /* responsive-target-size: 20x20 button */
+        button.tiny { width: 20px; height: 20px; padding: 0; }
+    </style>
+</head>
+<body>
+    <!-- structure-no-h1: no <h1> anywhere. Heading skip: h2 -> h4. -->
+    <h2>A section without an h1</h2>
+    <h4>Skipped from h2 to h4</h4>
+
+    <!-- structure-no-main: no <main> landmark -->
+
+    <!-- sr-duplicate-landmark: two navs with no accessible names -->
+    <nav>
+        <a href="/">Home</a>
+    </nav>
+    <nav>
+        <a href="/about">About</a>
+    </nav>
+
+    <!-- media: img missing alt, placeholder alt, decorative img with text alt -->
+    <img src="banner.png">
+    <img src="photo.jpg" alt="IMG_1234.jpg">
+    <img src="flourish.svg" alt="Decorative flourish" role="presentation">
+
+    <!-- media-video-no-track -->
+    <video src="promo.mp4" controls></video>
+
+    <!-- aria-invalid-role, aria-labelledby-missing -->
+    <div role="buton">Invalid role</div>
+    <button aria-labelledby="does-not-exist">Labelled by ghost</button>
+
+    <!-- aria-hidden on a focusable element -->
+    <a href="/x" aria-hidden="true">Hidden link that still takes focus</a>
+
+    <!-- cognitive: generic link text, empty link, duplicate link to different urls -->
+    <a href="/page1">click here</a>
+    <a href="/page2"></a>
+    <a href="/docs/v1">Documentation</a>
+    <a href="/docs/v2">Documentation</a>
+
+    <!-- keyboard: bare button, positive tabindex, unlabeled focusable div -->
+    <button class="bare">Bare</button>
+    <button tabindex="3">Out of order</button>
+    <div tabindex="0" onclick="void 0">Focusable div with no role</div>
+
+    <!-- forms: input no label, radio group no fieldset, email no autocomplete,
+         aria-invalid without description -->
+    <form>
+        <input type="text">
+        <input type="email" aria-invalid="true">
+        <label>
+            Choose a color
+            <input type="radio" name="color" value="red"> Red
+            <input type="radio" name="color" value="blue"> Blue
+        </label>
+        <button type="submit">Submit</button>
+    </form>
+
+    <!-- structure-table-no-th -->
+    <table>
+        <tr><td>a</td><td>b</td></tr>
+        <tr><td>c</td><td>d</td></tr>
+    </table>
+
+    <!-- visual: marquee, tiny text -->
+    <marquee>Scrolling text with no pause control</marquee>
+    <p class="note">Tiny legal disclaimer in 7px text.</p>
+
+    <!-- visual-infinite-animation target -->
+    <div class="spinner"></div>
+
+    <!-- responsive-target-size -->
+    <button class="tiny" aria-label="Close">x</button>
+
+    <!-- sr-empty-heading (headings with no text) -->
+    <h3></h3>
+
+    <!-- sr-dialog-no-name -->
+    <div role="dialog">
+        <p>Dialog content with no label</p>
+    </div>
+</body>
+</html>

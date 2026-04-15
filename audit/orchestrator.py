@@ -11,7 +11,6 @@ from __future__ import annotations
 
 import logging
 import time
-from concurrent.futures import ThreadPoolExecutor, as_completed
 from typing import Any
 
 from audit import (
@@ -102,22 +101,22 @@ class AuditOrchestrator:
         }
 
     def _run_static_analysis(self, page) -> None:
-        with ThreadPoolExecutor(max_workers=len(STATIC_MODULES)) as pool:
-            futures = {
-                pool.submit(mod.run, page, self.options): name
-                for name, mod in STATIC_MODULES.items()
-            }
-            for future in as_completed(futures):
-                name = futures[future]
-                try:
-                    self.results[name] = future.result()
-                except Exception as exc:
-                    log.exception("module %s failed", name)
-                    self.results[name] = {
-                        "ran": False,
-                        "error": str(exc),
-                        "issues": [],
-                    }
+        # Run static modules sequentially. The plan calls for parallelism via
+        # ThreadPoolExecutor, but Playwright's sync API is greenlet-based and
+        # cannot be safely shared across threads — a parallel page.evaluate
+        # from multiple threads raises `greenlet.error: cannot switch to a
+        # different thread`. Each module's page.evaluate is fast (< 100ms
+        # typical), so sequential is fine.
+        for name, mod in STATIC_MODULES.items():
+            try:
+                self.results[name] = mod.run(page, self.options)
+            except Exception as exc:
+                log.exception("module %s failed", name)
+                self.results[name] = {
+                    "ran": False,
+                    "error": str(exc),
+                    "issues": [],
+                }
 
     def _collect_issues(self) -> list[dict[str, Any]]:
         issues: list[dict[str, Any]] = []

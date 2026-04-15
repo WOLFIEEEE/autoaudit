@@ -15,45 +15,21 @@ def test_empty_tree_has_no_issues():
 
 
 def test_labeled_button_is_fine():
-    tree = _tree([{"role": "button", "name": "Save", "focusable": True}])
+    tree = _tree([{"role": "button", "name": "Save"}])
     assert analyze(tree) == []
 
 
 def test_unlabeled_button_flagged():
-    tree = _tree([{"role": "button", "name": "", "focusable": True}])
+    tree = _tree([{"role": "button", "name": ""}])
     issues = analyze(tree)
-    assert _rules(issues) == ["sr-silent-focusable"]
+    assert _rules(issues) == ["sr-silent-interactive"]
     assert issues[0]["severity"] == "critical"
 
 
-def test_non_focusable_unlabeled_button_not_flagged():
-    # Non-focusable buttons (e.g. aria-hidden ones) don't trip this rule.
-    tree = _tree([{"role": "button", "name": "", "focusable": False}])
+def test_disabled_unlabeled_button_not_flagged():
+    # Disabled controls are commonly intentionally nameless; skip to avoid noise.
+    tree = _tree([{"role": "button", "name": "", "disabled": True}])
     assert analyze(tree) == []
-
-
-def test_focusable_generic_flagged():
-    tree = _tree([{"role": "generic", "name": "Click me", "focusable": True}])
-    rules = _rules(analyze(tree))
-    assert "sr-generic-interactive" in rules
-
-
-def test_div_tabindex_without_role_detected():
-    # Chromium exposes <div tabindex=0> as role=generic.
-    tree = _tree(
-        [
-            {
-                "role": "generic",
-                "name": "",
-                "focusable": True,
-                "children": [],
-            }
-        ]
-    )
-    rules = _rules(analyze(tree))
-    assert "sr-generic-interactive" in rules
-    # And it's also silent, so both rules fire on the same node.
-    assert "sr-silent-focusable" not in rules  # generic isn't an interactive role
 
 
 def test_empty_heading_flagged():
@@ -114,7 +90,6 @@ def test_three_duplicate_landmarks_report_two():
     )
     issues = analyze(tree)
     dup = [i for i in issues if i["rule"] == "sr-duplicate-landmark"]
-    # Three copies with same name → two duplicate reports (2nd and 3rd).
     assert len(dup) == 2
 
 
@@ -127,23 +102,13 @@ def test_nested_tree_is_walked():
                 "children": [
                     {
                         "role": "region",
-                        "name": "",
-                        "children": [
-                            {"role": "button", "name": "", "focusable": True}
-                        ],
+                        "name": "Inner",
+                        "children": [{"role": "button", "name": ""}],
                     }
                 ],
             }
         ]
     )
     rules = _rules(analyze(tree))
-    # The deeply-nested silent button should still be found.
-    assert "sr-silent-focusable" in rules
-
-
-def test_multiple_rules_on_same_element():
-    # Focusable + generic role + no name → generic fires (interactive rule
-    # only fires for the semantic interactive-role list).
-    tree = _tree([{"role": "generic", "name": "", "focusable": True}])
-    rules = set(_rules(analyze(tree)))
-    assert rules == {"sr-generic-interactive"}
+    # Nested silent button should still be caught.
+    assert "sr-silent-interactive" in rules

@@ -3,12 +3,11 @@
 FastAPI server that accepts a URL and returns a structured WCAG 2.2 audit.
 One endpoint in, full audit out.
 
-This repository is the **Sprint 1–3 MVP** of the full plan: the server,
-job queue, browser automation, and axe-core WCAG engine are wired up
-end-to-end. The nine additional audit modules (structure, ARIA, media,
-cognitive, visual, keyboard, forms, responsive, screen_reader/NVDA) are
-scaffolded as stubs returning a valid empty module result, ready to be
-filled in module-by-module.
+Every module from the plan ships with real analysis, verified by an
+end-to-end Playwright integration test that runs the full pipeline
+against a fixture HTML page with planted issues. The only deferred
+piece is Path B of the screen_reader module — real NVDA speech
+capture, which needs a Windows worker.
 
 ## Status
 
@@ -26,10 +25,10 @@ filled in module-by-module.
 | media         | Working (5 rules) |
 | cognitive     | Working (3 rules) |
 | visual        | Working (3 rules, static only — contrast covered by wcag_engine/axe) |
-| keyboard      | Working (4 rules) |
+| keyboard      | Working (5 rules) |
 | forms         | Working (4 rules) |
 | responsive    | Working (3 rules) |
-| screen_reader | Path A working (5 rules via Chromium a11y tree — cross-platform). Path B (real NVDA) deferred pending Windows worker |
+| screen_reader | Path A working (4 rules via Chromium a11y tree — cross-platform). Path B (real NVDA) deferred pending Windows worker |
 
 ## Quick start (local)
 
@@ -131,12 +130,31 @@ config/         YAML defaults
 ## Running tests
 
 ```bash
+# Fast unit tests (no Playwright, no Redis, no network)
+pytest -m "not slow"
+
+# Full suite including end-to-end Playwright integration test
 pytest
 ```
 
-The default suite does not require Playwright or Redis. It covers scoring,
-deduplication, tag parsing, and API request validation. Browser-integration
-tests will be added behind a `--slow` marker alongside the module work.
+The fast suite runs in ~2s and covers scoring, deduplication, tag
+parsing, API request validation, and every module's pure-Python
+`analyze()` function with fixture data. No external dependencies.
+
+The `slow` suite adds `tests/integration/test_e2e.py`, which:
+- Starts a local HTTP server bound to `tests/fixtures/`
+- Loads a fixture HTML page containing deliberate accessibility failures
+  across every module
+- Runs both `/audit/quick` (axe-core only) and the full orchestrator
+- Asserts that representative rules from each module fire
+
+Requires:
+- `playwright install chromium` (one-time)
+- `python scripts/fetch_axe.py` (vendors axe-core locally — the test
+  won't reach the CDN in sandboxed CI environments)
+
+If either dependency is missing, the integration test auto-skips with
+an actionable message rather than failing.
 
 ## Next sprints
 

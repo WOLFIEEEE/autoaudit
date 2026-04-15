@@ -1,8 +1,16 @@
-"""Merge duplicate issues across modules.
+"""Merge duplicate issues within and across modules.
 
-Two issues are treated as duplicates when they describe the same DOM element
-and the same root-cause rule family (rule prefix before the first hyphen).
-The one with the higher severity wins; ties keep the first seen.
+Two issues are treated as duplicates when they describe the same DOM
+element (same selector) and the same rule. Higher severity wins; on
+ties, first seen wins.
+
+We deliberately do NOT merge different rules on the same element.
+Early versions keyed by rule prefix ("forms-*" all root to "forms"),
+which accidentally collapsed e.g. forms-input-no-label with
+forms-aria-invalid-no-description on the same input — two distinct
+problems. Cross-module overlap (axe's `label` vs our
+`forms-input-no-label`) is better handled by a targeted mapping or
+by the UI layer grouping by WCAG criterion.
 """
 
 from __future__ import annotations
@@ -15,8 +23,7 @@ SEVERITY_RANK = {"critical": 0, "serious": 1, "moderate": 2, "minor": 3}
 def _key(issue: dict[str, Any]) -> str:
     selector = (issue.get("element") or {}).get("selector", "")
     rule = issue.get("rule", "")
-    rule_root = rule.split("-", 1)[0] if rule else ""
-    return f"{selector}::{rule_root}"
+    return f"{selector}::{rule}"
 
 
 def deduplicate_issues(issues: list[dict[str, Any]]) -> list[dict[str, Any]]:

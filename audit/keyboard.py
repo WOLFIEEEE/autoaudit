@@ -9,6 +9,7 @@ Rules implemented:
 - keyboard-no-focus-indicator WCAG 2.4.7  serious    focused element has no visible focus style
 - keyboard-no-accessible-name WCAG 4.1.2  critical   focusable element has no accessible name
 - keyboard-positive-tabindex  WCAG 2.4.3  moderate   tabindex > 0 disrupts natural focus order
+- keyboard-generic-focusable  WCAG 4.1.2  serious    focusable element has no semantic tag and no role attribute (<div tabindex=0>)
 
 The walk and the analyzer are split: `_walk(page, options)` performs the
 browser interaction, `analyze(stops, cycled, max_tabs)` is pure Python and
@@ -90,12 +91,16 @@ _FOCUS_PROBE_JS = r"""
         || parseFloat(style.borderBottomWidth) > 0
         || parseFloat(style.borderLeftWidth) > 0
         || parseFloat(style.borderRightWidth) > 0;
+    const tag = el.tagName.toLowerCase();
+    const semantic = new Set(['a','button','input','select','textarea','summary','details','label']);
     return {
         left_page: false,
-        tag: el.tagName.toLowerCase(),
+        tag,
         id: el.id || '',
         selector: cssPath(el),
         role: el.getAttribute('role') || '',
+        has_role_attr: el.hasAttribute('role'),
+        is_semantic_tag: semantic.has(tag),
         tabindex: el.tabIndex,
         accessible_name: accessibleName(el),
         outline_style: style.outlineStyle,
@@ -229,6 +234,33 @@ def analyze(
                     fix=(
                         "Add a :focus or :focus-visible style with a clearly visible "
                         "outline, box-shadow, or border change."
+                    ),
+                )
+            )
+
+        if (
+            not stop.get("is_semantic_tag", False)
+            and not stop.get("has_role_attr", False)
+        ):
+            issues.append(
+                make_issue(
+                    issue_id=f"keyboard-generic-focusable-{idx}",
+                    module="keyboard",
+                    rule="keyboard-generic-focusable",
+                    severity="serious",
+                    principle="robust",
+                    wcag=["4.1.2"],
+                    title="Focusable element has no semantic tag and no role attribute",
+                    description=(
+                        "Screen readers can't tell users what kind of control this is. "
+                        "This is the classic <div onclick> / <span tabindex> anti-pattern."
+                    ),
+                    selector=selector,
+                    html_snippet=html_snippet,
+                    details={"tag": tag, "tab_index": idx + 1},
+                    fix=(
+                        "Use a semantic element (<button>, <a>), or add an appropriate "
+                        'role (role="button") plus keyboard handlers.'
                     ),
                 )
             )
