@@ -64,27 +64,28 @@ class AuditOrchestrator:
             self.results["keyboard"] = keyboard.run(page, None, self.options)
             self.results["forms"] = forms.run(page, self.options)
 
-            if self._resolve_skip_nvda():
-                self.results["screen_reader"] = {
-                    "ran": False,
-                    "skipped": True,
-                    "reason": "skip_nvda enabled or non-Windows host",
-                    "issues": [],
-                }
-            else:
-                from audit.screen_reader import NVDAController, NVDAUnavailableError
+            # Path A: Chromium a11y-tree analysis. Cross-platform, always runs.
+            from audit import screen_reader
 
+            self.results["screen_reader"] = screen_reader.run(page, self.options)
+
+            # Path B: real NVDA speech capture. Stacks on top when available.
+            if not self._resolve_skip_nvda():
                 try:
-                    nvda = NVDAController()
+                    nvda = screen_reader.NVDAController()
                     nvda.ensure_running()
-                    # Real NVDA flow lives here; not implemented yet.
-                    self.results["screen_reader"] = nvda.analyze_results([])
-                except (NVDAUnavailableError, NotImplementedError) as exc:
-                    self.results["screen_reader"] = {
+                    nvda_result = nvda.analyze_results([])
+                    # Merge issues rather than replace — deduplicator handles overlap.
+                    nvda_issues = nvda_result.get("issues") or []
+                    self.results["screen_reader"].setdefault("issues", []).extend(
+                        nvda_issues
+                    )
+                    self.results["screen_reader"]["nvda"] = nvda_result
+                except (screen_reader.NVDAUnavailableError, NotImplementedError) as exc:
+                    self.results["screen_reader"]["nvda"] = {
                         "ran": False,
                         "skipped": True,
                         "reason": str(exc),
-                        "issues": [],
                     }
 
         all_issues = self._collect_issues()

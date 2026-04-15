@@ -29,7 +29,7 @@ filled in module-by-module.
 | keyboard      | Working (4 rules) |
 | forms         | Working (4 rules) |
 | responsive    | Working (3 rules) |
-| screen_reader | Stub (Windows-only when built)|
+| screen_reader | Path A working (5 rules via Chromium a11y tree — cross-platform). Path B (real NVDA) deferred pending Windows worker |
 
 ## Quick start (local)
 
