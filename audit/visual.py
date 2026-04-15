@@ -127,7 +127,6 @@ def analyze(dom: dict[str, Any]) -> list[dict[str, Any]]:
                 module="visual",
                 rule="visual-marquee-or-blink",
                 severity="serious",
-                principle="operable",
                 wcag=["2.2.2"],
                 title=f"<{tag}> element is moving/blinking content with no pause control",
                 description=(
@@ -157,7 +156,6 @@ def analyze(dom: dict[str, Any]) -> list[dict[str, Any]]:
                 module="visual",
                 rule="visual-infinite-animation",
                 severity="moderate",
-                principle="operable",
                 wcag=["2.2.2"],
                 title=f"Element has infinite CSS animation ({dur}s cycle)",
                 description=(
@@ -186,7 +184,6 @@ def analyze(dom: dict[str, Any]) -> list[dict[str, Any]]:
                 module="visual",
                 rule="visual-tiny-text",
                 severity="minor",
-                principle="perceivable",
                 wcag=["1.4.4"],
                 title=f"Text rendered at only {sz}px",
                 description=(

@@ -126,7 +126,6 @@ def analyze(dom: dict[str, Any]) -> list[dict[str, Any]]:
                     module="aria",
                     rule="aria-invalid-role",
                     severity="serious",
-                    principle="robust",
                     wcag=["4.1.2"],
                     title=f'Unknown ARIA role "{role}"',
                     description=(
@@ -150,7 +149,6 @@ def analyze(dom: dict[str, Any]) -> list[dict[str, Any]]:
                     module="aria",
                     rule="aria-labelledby-missing",
                     severity="serious",
-                    principle="robust",
                     wcag=["4.1.2"],
                     title="aria-labelledby references an ID that doesn't exist",
                     description=(
@@ -173,7 +171,6 @@ def analyze(dom: dict[str, Any]) -> list[dict[str, Any]]:
                     module="aria",
                     rule="aria-describedby-missing",
                     severity="moderate",
-                    principle="robust",
                     wcag=["4.1.2"],
                     title="aria-describedby references an ID that doesn't exist",
                     description="The accessible description will be empty.",
@@ -192,7 +189,6 @@ def analyze(dom: dict[str, Any]) -> list[dict[str, Any]]:
                 module="aria",
                 rule="aria-hidden-focusable",
                 severity="serious",
-                principle="robust",
                 wcag=["4.1.2"],
                 title='aria-hidden="true" applied to a focusable element',
                 description=(

@@ -187,7 +187,6 @@ def analyze(dom: dict[str, Any]) -> list[dict[str, Any]]:
                     module="forms",
                     rule="forms-input-no-label",
                     severity="critical",
-                    principle="understandable",
                     wcag=["3.3.2", "4.1.2"],
                     title=f"<{tag}> has no accessible label",
                     description=(
@@ -215,7 +214,6 @@ def analyze(dom: dict[str, Any]) -> list[dict[str, Any]]:
                         module="forms",
                         rule="forms-aria-invalid-no-description",
                         severity="moderate",
-                        principle="understandable",
                         wcag=["3.3.1", "3.3.3"],
                         title="Field marked aria-invalid but has no associated error description",
                         description=(
@@ -240,7 +238,6 @@ def analyze(dom: dict[str, Any]) -> list[dict[str, Any]]:
                     module="forms",
                     rule="forms-missing-autocomplete",
                     severity="minor",
-                    principle="understandable",
                     wcag=["1.3.5"],
                     title=f"<{tag} type={ctype or 'text'}> appears to collect personal data without autocomplete",
                     description=(
@@ -270,7 +267,6 @@ def analyze(dom: dict[str, Any]) -> list[dict[str, Any]]:
                 module="forms",
                 rule="forms-radio-group-no-fieldset",
                 severity="serious",
-                principle="perceivable",
                 wcag=["1.3.1"],
                 title=f"{gtype} group '{g.get('name','')}' has no <fieldset><legend>",
                 description=(

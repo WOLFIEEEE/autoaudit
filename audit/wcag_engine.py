@@ -16,6 +16,7 @@ import time
 from typing import Any
 
 from server.config import CONFIG
+from audit._wcag import principle_for
 
 log = logging.getLogger(__name__)
 
@@ -27,21 +28,16 @@ AXE_SEVERITY: dict[str, str] = {
     "minor": "minor",
 }
 
-# Map WCAG SC → principle (partial; falls back to "robust").
-_PRINCIPLE_PREFIX = {
-    "1": "perceivable",
-    "2": "operable",
-    "3": "understandable",
-    "4": "robust",
-}
-
 
 def _principle_from_tags(tags: list[str]) -> str:
-    for tag in tags:
-        if tag.startswith("wcag") and len(tag) >= 5 and tag[4].isdigit():
-            # e.g. 'wcag143' → first digit '1' → perceivable
-            return _PRINCIPLE_PREFIX.get(tag[4], "robust")
-    return "robust"
+    """Derive the WCAG principle from axe's tag list.
+
+    axe emits tags like 'wcag143' meaning 1.4.3. We extract the leading
+    digit(s) and defer to the shared principle_for helper so axe-sourced
+    issues use the same mapping as custom-rule issues.
+    """
+    criteria = _wcag_criteria_from_tags(tags)
+    return principle_for(criteria)
 
 
 def _wcag_criteria_from_tags(tags: list[str]) -> list[str]:

@@ -40,6 +40,20 @@ To scale, run multiple workers (each with `--pool=solo`) rather than increasing 
 
 SQLite is the default. Change `DATABASE_URL` to a Postgres URL (`postgresql://user:pass@host/db`) to swap backends — the `server/database.py` layer uses `sqlite3` directly, so a Postgres swap requires replacing that module. Tracked as a future enhancement.
 
+#### Cleaning up old results
+
+SQLite is append-only; the table grows forever unless you prune it. A CLI lives at `scripts/cleanup_audits.py`:
+
+```bash
+# Delete completed / failed audits older than 30 days
+python scripts/cleanup_audits.py --days 30
+
+# Dry run — report the count without deleting
+python scripts/cleanup_audits.py --days 30 --dry-run
+```
+
+Wire this into a cron, systemd timer, k8s CronJob, or Celery beat task. Queued or running audits are never deleted — if they're stale, an operator should investigate.
+
 ### `SKIP_NVDA` resolution
 
 The `skip_nvda` option resolution order (highest precedence first):

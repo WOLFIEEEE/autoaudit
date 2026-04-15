@@ -94,7 +94,6 @@ def analyze(dom: dict[str, Any]) -> list[dict[str, Any]]:
                     module="media",
                     rule="media-img-no-alt",
                     severity="critical",
-                    principle="perceivable",
                     wcag=["1.1.1"],
                     title="<img> missing alt attribute",
                     description=(
@@ -116,7 +115,6 @@ def analyze(dom: dict[str, Any]) -> list[dict[str, Any]]:
                     module="media",
                     rule="media-img-placeholder-alt",
                     severity="moderate",
-                    principle="perceivable",
                     wcag=["1.1.1"],
                     title="Image alt text looks like a placeholder or filename",
                     description=(
@@ -138,7 +136,6 @@ def analyze(dom: dict[str, Any]) -> list[dict[str, Any]]:
                     module="media",
                     rule="media-img-decorative-text",
                     severity="minor",
-                    principle="perceivable",
                     wcag=["1.1.1"],
                     title="Decorative image has non-empty alt text",
                     description=(
@@ -161,7 +158,6 @@ def analyze(dom: dict[str, Any]) -> list[dict[str, Any]]:
                     module="media",
                     rule="media-video-no-track",
                     severity="serious",
-                    principle="perceivable",
                     wcag=["1.2.2"],
                     title="<video> has no caption track",
                     description=(
@@ -180,7 +176,6 @@ def analyze(dom: dict[str, Any]) -> list[dict[str, Any]]:
                     module="media",
                     rule="media-autoplay",
                     severity="serious",
-                    principle="operable",
                     wcag=["1.4.2"],
                     title="<video> autoplays with audio",
                     description=(
@@ -202,7 +197,6 @@ def analyze(dom: dict[str, Any]) -> list[dict[str, Any]]:
                     module="media",
                     rule="media-autoplay",
                     severity="serious",
-                    principle="operable",
                     wcag=["1.4.2"],
                     title="<audio> autoplays",
                     description=(

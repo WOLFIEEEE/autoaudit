@@ -163,7 +163,6 @@ def analyze(
                 module="keyboard",
                 rule="keyboard-trap-suspected",
                 severity="critical",
-                principle="operable",
                 wcag=["2.1.2"],
                 title="Possible keyboard trap",
                 description=(
@@ -192,7 +191,6 @@ def analyze(
                     module="keyboard",
                     rule="keyboard-no-accessible-name",
                     severity="critical",
-                    principle="robust",
                     wcag=["4.1.2"],
                     title="Focusable element has no accessible name",
                     description=(
@@ -217,7 +215,6 @@ def analyze(
                     module="keyboard",
                     rule="keyboard-no-focus-indicator",
                     severity="serious",
-                    principle="operable",
                     wcag=["2.4.7"],
                     title="Focused element has no visible focus indicator",
                     description=(
@@ -248,7 +245,6 @@ def analyze(
                     module="keyboard",
                     rule="keyboard-generic-focusable",
                     severity="serious",
-                    principle="robust",
                     wcag=["4.1.2"],
                     title="Focusable element has no semantic tag and no role attribute",
                     description=(
@@ -272,7 +268,6 @@ def analyze(
                     module="keyboard",
                     rule="keyboard-positive-tabindex",
                     severity="moderate",
-                    principle="operable",
                     wcag=["2.4.3"],
                     title=f"Element has tabindex={tabindex} (positive)",
                     description=(

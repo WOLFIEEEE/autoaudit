@@ -122,7 +122,6 @@ def analyze(dom: dict[str, Any]) -> list[dict[str, Any]]:
                 module="responsive",
                 rule="responsive-viewport-meta-missing",
                 severity="serious",
-                principle="perceivable",
                 wcag=["1.4.4", "1.4.10"],
                 title="Page has no <meta name=\"viewport\"> tag",
                 description=(
@@ -140,7 +139,6 @@ def analyze(dom: dict[str, Any]) -> list[dict[str, Any]]:
                 module="responsive",
                 rule="responsive-viewport-zoom-disabled",
                 severity="serious",
-                principle="perceivable",
                 wcag=["1.4.4"],
                 title="Viewport meta disables user zoom",
                 description=(
@@ -169,7 +167,6 @@ def analyze(dom: dict[str, Any]) -> list[dict[str, Any]]:
                 module="responsive",
                 rule="responsive-target-size",
                 severity="moderate",
-                principle="operable",
                 wcag=["2.5.8"],
                 title=f"Interactive target is only {w}x{h}px (minimum {MIN_TARGET_SIZE}x{MIN_TARGET_SIZE})",
                 description=(

@@ -84,7 +84,6 @@ def analyze(dom: dict[str, Any]) -> list[dict[str, Any]]:
                 module="structure",
                 rule="structure-html-lang",
                 severity="serious",
-                principle="understandable",
                 wcag=["3.1.1"],
                 title="<html> element is missing a lang attribute",
                 description=(
@@ -105,7 +104,6 @@ def analyze(dom: dict[str, Any]) -> list[dict[str, Any]]:
                 module="structure",
                 rule="structure-title-missing",
                 severity="serious",
-                principle="operable",
                 wcag=["2.4.2"],
                 title="<title> is missing or empty",
                 description="Every page needs a unique, descriptive <title> element.",
@@ -124,7 +122,6 @@ def analyze(dom: dict[str, Any]) -> list[dict[str, Any]]:
                 module="structure",
                 rule="structure-no-h1",
                 severity="moderate",
-                principle="perceivable",
                 wcag=["1.3.1"],
                 title="Page has no <h1>",
                 description="A top-level heading helps users orient themselves.",
@@ -138,7 +135,6 @@ def analyze(dom: dict[str, Any]) -> list[dict[str, Any]]:
                 module="structure",
                 rule="structure-multiple-h1",
                 severity="minor",
-                principle="perceivable",
                 wcag=["1.3.1"],
                 title=f"Page has {len(h1s)} <h1> elements",
                 description=(
@@ -163,7 +159,6 @@ def analyze(dom: dict[str, Any]) -> list[dict[str, Any]]:
                     module="structure",
                     rule="structure-heading-skip",
                     severity="moderate",
-                    principle="perceivable",
                     wcag=["1.3.1"],
                     title=f"Heading jumps from h{prev_level} to h{level}",
                     description=(
@@ -188,7 +183,6 @@ def analyze(dom: dict[str, Any]) -> list[dict[str, Any]]:
                 module="structure",
                 rule="structure-no-main",
                 severity="moderate",
-                principle="perceivable",
                 wcag=["1.3.1"],
                 title="No <main> landmark",
                 description=(
@@ -208,7 +202,6 @@ def analyze(dom: dict[str, Any]) -> list[dict[str, Any]]:
                     module="structure",
                     rule="structure-table-no-th",
                     severity="serious",
-                    principle="perceivable",
                     wcag=["1.3.1"],
                     title="Data table has no <th> headers",
                     description=(

@@ -107,7 +107,6 @@ def analyze(links: list[dict[str, Any]]) -> list[dict[str, Any]]:
                     module="cognitive",
                     rule="cognitive-empty-link",
                     severity="serious",
-                    principle="understandable",
                     wcag=["2.4.4"],
                     title="Link has no accessible text",
                     description=(
@@ -129,7 +128,6 @@ def analyze(links: list[dict[str, Any]]) -> list[dict[str, Any]]:
                     module="cognitive",
                     rule="cognitive-generic-link-text",
                     severity="moderate",
-                    principle="understandable",
                     wcag=["2.4.4"],
                     title=f'Link text "{text.strip()}" is not descriptive',
                     description=(
@@ -159,7 +157,6 @@ def analyze(links: list[dict[str, Any]]) -> list[dict[str, Any]]:
                         module="cognitive",
                         rule="cognitive-duplicate-link-text",
                         severity="moderate",
-                        principle="understandable",
                         wcag=["2.4.4"],
                         title=f'Multiple links with text "{link.get("text", "").strip()}" go to different URLs',
                         description=(

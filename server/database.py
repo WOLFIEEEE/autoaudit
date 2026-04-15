@@ -126,3 +126,31 @@ def delete_audit_result(job_id: str) -> bool:
     with _lock, _connect() as conn:
         cur = conn.execute("DELETE FROM audits WHERE job_id = ?", (job_id,))
         return cur.rowcount > 0
+
+
+def cleanup_old_results(older_than_days: int, *, statuses: tuple[str, ...] = ("completed", "failed")) -> int:
+    """Delete terminal-state audit rows older than the cutoff.
+
+    Returns the number of rows deleted. Intended for a periodic cron /
+    Celery beat task; the DB will otherwise grow forever.
+
+    Rows in 'queued' or 'running' state are never deleted by this function,
+    even if they're older than the cutoff — they might be legitimate
+    long-running audits, and the caller probably wants to investigate
+    manually if they've been stuck for days.
+    """
+    if older_than_days < 0:
+        raise ValueError("older_than_days must be non-negative")
+
+    import datetime as _dt
+
+    cutoff = (_dt.datetime.now(_dt.timezone.utc) - _dt.timedelta(days=older_than_days)).strftime(
+        "%Y-%m-%dT%H:%M:%SZ"
+    )
+    placeholders = ",".join("?" for _ in statuses)
+    with _lock, _connect() as conn:
+        cur = conn.execute(
+            f"DELETE FROM audits WHERE status IN ({placeholders}) AND updated_at < ?",
+            (*statuses, cutoff),
+        )
+        return cur.rowcount

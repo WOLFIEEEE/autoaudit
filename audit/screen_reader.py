@@ -125,7 +125,6 @@ def analyze(tree: dict[str, Any] | None) -> list[dict[str, Any]]:
                     module="screen_reader",
                     rule="sr-silent-interactive",
                     severity="critical",
-                    principle="robust",
                     wcag=["4.1.2"],
                     title=f'<{role}> has no accessible name',
                     description=(
@@ -150,7 +149,6 @@ def analyze(tree: dict[str, Any] | None) -> list[dict[str, Any]]:
                     module="screen_reader",
                     rule="sr-empty-heading",
                     severity="serious",
-                    principle="perceivable",
                     wcag=["1.3.1"],
                     title=f'Heading level {node.get("level","?")} has no text',
                     description=(
@@ -171,7 +169,6 @@ def analyze(tree: dict[str, Any] | None) -> list[dict[str, Any]]:
                     module="screen_reader",
                     rule="sr-dialog-no-name",
                     severity="serious",
-                    principle="robust",
                     wcag=["4.1.2"],
                     title=f"<{role}> has no accessible name",
                     description=(
@@ -208,7 +205,6 @@ def analyze(tree: dict[str, Any] | None) -> list[dict[str, Any]]:
                         module="screen_reader",
                         rule="sr-duplicate-landmark",
                         severity="moderate",
-                        principle="perceivable",
                         wcag=["1.3.1"],
                         title=(
                             f'Multiple <{role}> landmarks share '
