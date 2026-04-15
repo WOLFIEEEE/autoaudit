@@ -25,7 +25,7 @@ filled in module-by-module.
 | aria          | Working (4 rules) |
 | media         | Working (5 rules) |
 | cognitive     | Working (3 rules) |
-| visual        | Stub           |
+| visual        | Working (3 rules, static only — contrast covered by wcag_engine/axe) |
 | keyboard      | Working (4 rules) |
 | forms         | Working (4 rules) |
 | responsive    | Working (3 rules) |
