@@ -19,7 +19,7 @@ import logging
 import os
 import time
 import uuid
-from collections import defaultdict, deque
+from collections import deque
 from contextvars import ContextVar
 from typing import Any, Callable
 
@@ -169,12 +169,22 @@ class ApiKeyMiddleware(BaseHTTPMiddleware):
 
 
 class RateLimitMiddleware(BaseHTTPMiddleware):
+    # Cap on unique buckets we'll track. Prevents an attacker cycling
+    # through IPs from blowing up memory. When we'd exceed the cap we
+    # drop the least-recently-used bucket; the guarantee is soft (a
+    # blacklisted caller returns briefly on eviction), acceptable for a
+    # single-process in-memory limiter.
+    _MAX_BUCKETS = 10_000
+
     def __init__(self, app):
         super().__init__(app)
         self._limit = int(os.environ.get("RATE_LIMIT_PER_MIN", "0"))
         self._enabled = self._limit > 0
         self._window_s = 60.0
-        self._hits: dict[str, deque[float]] = defaultdict(deque)
+        # OrderedDict so we can evict LRU in O(1).
+        from collections import OrderedDict
+
+        self._hits: "OrderedDict[str, deque[float]]" = OrderedDict()
 
     async def dispatch(self, request: Request, call_next: Callable) -> Response:
         if not self._enabled or request.url.path in _PUBLIC_PATHS:
@@ -184,7 +194,18 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
             request.client.host if request.client else "anon"
         )
         now = time.monotonic()
-        hits = self._hits[bucket]
+
+        hits = self._hits.get(bucket)
+        if hits is None:
+            hits = deque()
+            self._hits[bucket] = hits
+            if len(self._hits) > self._MAX_BUCKETS:
+                # popitem(last=False) → evict oldest.
+                self._hits.popitem(last=False)
+        else:
+            # Touch LRU position.
+            self._hits.move_to_end(bucket)
+
         cutoff = now - self._window_s
         while hits and hits[0] < cutoff:
             hits.popleft()

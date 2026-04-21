@@ -176,6 +176,47 @@
         </tbody>
     </table>
 
+    {% if audit.nvda_status and audit.nvda_status != 'completed' %}
+    <aside style="margin: 1rem 0; padding: 0.75rem 1rem; border: 1px solid var(--border); border-radius: 6px; background: rgba(0,76,153,0.04);">
+        <strong>NVDA (Path B) status:</strong> {{ audit.nvda_status }}.
+        {% if audit.nvda_status == 'pending' %}
+        This report will update automatically when a Windows worker finishes the real-NVDA pass.
+        {% elif audit.nvda_status == 'skipped' %}
+        Real-NVDA testing was skipped (no Windows worker, or <code>skip_nvda=true</code>).
+        Chromium's a11y-tree analysis (Path A) still ran.
+        {% elif audit.nvda_status == 'failed' %}
+        The Windows NVDA worker reported a failure. Check server logs.
+        {% elif audit.nvda_status == 'enqueue_failed' %}
+        Could not reach the NVDA queue. Verify Redis connectivity from your Windows worker.
+        {% endif %}
+    </aside>
+    {% endif %}
+
+    <aside style="margin: 1.5rem 0; padding: 0.75rem 1rem; border: 1px dashed var(--border); border-radius: 6px;">
+        <strong>Coverage note.</strong> Automated tooling catches roughly 30–40% of WCAG barriers.
+        This audit does not cover: JAWS or VoiceOver / TalkBack, multi-page authenticated flows
+        beyond what you explicitly requested, PDF documents, video caption quality, or the
+        subjective usefulness of alt text and link context. Real user testing with disabled
+        participants is the only way to find the remaining barriers.
+    </aside>
+
+    {% if audit.pages %}
+    <h2>Pages audited <span class="muted" style="font-weight: normal;">({{ audit.pages|length }})</span></h2>
+    <table>
+        <thead><tr><th>URL</th><th>Score</th><th>Grade</th><th>Issues</th></tr></thead>
+        <tbody>
+        {% for page in audit.pages %}
+            <tr>
+                <td><a href="{{ page.url }}">{{ page.url }}</a></td>
+                <td>{{ (page.summary or {}).score if page.summary else '—' }}</td>
+                <td>{{ (page.summary or {}).grade if page.summary else '—' }}</td>
+                <td>{{ (page.issues or [])|length }}</td>
+            </tr>
+        {% endfor %}
+        </tbody>
+    </table>
+    {% endif %}
+
     <h2>Issues <span class="muted" style="font-weight: normal;">({{ audit.issues|length }})</span></h2>
     {% if not audit.issues %}
     <p class="muted">No issues reported.</p>

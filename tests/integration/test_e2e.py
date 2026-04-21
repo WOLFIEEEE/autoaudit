@@ -133,6 +133,7 @@ def test_full_orchestrator_runs_every_module(sample_url):
         "forms",
         "responsive",
         "visual",
+        "preferences",
         "screen_reader",
     }
     assert set(modules.keys()) == expected, modules.keys()

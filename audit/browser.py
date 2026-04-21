@@ -8,11 +8,18 @@ Policy notes:
   for site owners, not a scraper.
 - bypass_csp=True is required to inject axe-core into pages whose CSP
   would otherwise block script-src additions.
+
+Login: when `options["login"]` is set (per LoginConfig in models.py),
+the manager navigates to the login page, fills the form, and waits
+for either `success_selector` or networkidle before proceeding to the
+target URL. Cookies from the login persist for the lifetime of the
+context and therefore apply to every page the orchestrator visits.
 """
 
 from __future__ import annotations
 
 import logging
+import time
 from contextlib import contextmanager
 from typing import Any
 
@@ -29,6 +36,16 @@ LAUNCH_ARGS = [
     "--disable-background-timer-throttling",
 ]
 
+# Transient navigation errors we retry once. Anything else (CSP, 403,
+# protocol error) is bubbled up immediately — retrying won't help.
+_RETRYABLE_NAV_SUBSTRINGS = (
+    "timeout",
+    "net::ERR_CONNECTION_RESET",
+    "net::ERR_CONNECTION_CLOSED",
+    "net::ERR_NETWORK_CHANGED",
+    "net::ERR_TIMED_OUT",
+)
+
 
 class BrowserManager:
     def __init__(self, headless: bool = True):
@@ -42,58 +59,155 @@ class BrowserManager:
         from playwright.sync_api import sync_playwright
 
         self._pw = sync_playwright().start()
-        self._browser = self._pw.chromium.launch(headless=self.headless, args=LAUNCH_ARGS)
+        try:
+            self._browser = self._pw.chromium.launch(headless=self.headless, args=LAUNCH_ARGS)
 
-        vp = options.get("viewport") or {"width": 1280, "height": 720}
-        context_kwargs: dict[str, Any] = {
-            "viewport": vp,
-            "user_agent": USER_AGENT,
-            "ignore_https_errors": True,
-            "bypass_csp": True,
-        }
-
-        auth = options.get("basic_auth")
-        if auth and auth.get("username"):
-            context_kwargs["http_credentials"] = {
-                "username": auth["username"],
-                "password": auth.get("password", ""),
+            vp = options.get("viewport") or {"width": 1280, "height": 720}
+            context_kwargs: dict[str, Any] = {
+                "viewport": vp,
+                "user_agent": USER_AGENT,
+                "ignore_https_errors": True,
+                "bypass_csp": True,
             }
 
-        self._context = self._browser.new_context(**context_kwargs)
+            auth = options.get("basic_auth")
+            if auth and auth.get("username"):
+                context_kwargs["http_credentials"] = {
+                    "username": auth["username"],
+                    "password": auth.get("password", ""),
+                }
 
-        cookies = options.get("cookies") or []
-        if cookies:
-            self._context.add_cookies(cookies)
+            self._context = self._browser.new_context(**context_kwargs)
 
-        headers = options.get("headers") or {}
-        if headers:
-            self._context.set_extra_http_headers(headers)
+            cookies = options.get("cookies") or []
+            if cookies:
+                self._context.add_cookies(cookies)
 
-        self._page = self._context.new_page()
-        timeout_ms = int(options.get("timeout_seconds", 30)) * 1000
-        self._page.goto(url, wait_until="networkidle", timeout=timeout_ms)
+            headers = options.get("headers") or {}
+            if headers:
+                self._context.set_extra_http_headers(headers)
+
+            self._page = self._context.new_page()
+            timeout_ms = int(options.get("timeout_seconds", 30)) * 1000
+
+            # Perform form login (if configured) before hitting the
+            # audit target. Login failures raise — a subsequent audit
+            # of a gated page against an unauthenticated session would
+            # just scan the login screen, which isn't what the user
+            # asked for.
+            login = options.get("login")
+            if login:
+                self._perform_login(login, timeout_ms)
+
+            self._navigate_with_retry(url, timeout_ms)
+            return self._page
+        except Exception:
+            # If we partially initialized and then crashed, tear down
+            # whatever we built so we don't leak Chromium processes.
+            self.close()
+            raise
+
+    def goto(self, url: str, timeout_ms: int | None = None):
+        """Navigate the existing page to a new URL.
+
+        Reuses the already-launched browser/context/page so cookies and
+        login state persist. Used by the multi-page orchestrator.
+        """
+        if self._page is None:
+            raise RuntimeError("BrowserManager.goto called before launch()")
+        if timeout_ms is None:
+            timeout_ms = 30_000
+        self._navigate_with_retry(url, timeout_ms)
         return self._page
+
+    def _perform_login(self, login: dict[str, Any], default_timeout_ms: int) -> None:
+        """Fill and submit a login form in the current page.
+
+        `login` is a dict matching LoginConfig. Each step is bounded by
+        `login["timeout_seconds"]` (falling back to the overall nav
+        timeout) so a stuck selector fails fast rather than consuming
+        the entire audit budget.
+        """
+        step_timeout_ms = int(login.get("timeout_seconds", 15)) * 1000
+        timeout = min(step_timeout_ms, default_timeout_ms)
+
+        log.info("performing form login at %s", login["url"])
+        self._navigate_with_retry(login["url"], timeout)
+
+        self._page.fill(login["username_selector"], login["username"], timeout=timeout)
+        self._page.fill(login["password_selector"], login["password"], timeout=timeout)
+
+        # Click + wait in parallel: some sites navigate on submit (we want
+        # to wait for the new document) and some do XHR + client-side
+        # rewrite (we wait for success_selector instead).
+        success_selector = login.get("success_selector")
+        try:
+            if success_selector:
+                self._page.click(login["submit_selector"], timeout=timeout)
+                self._page.wait_for_selector(success_selector, timeout=timeout)
+            else:
+                with self._page.expect_navigation(timeout=timeout, wait_until="networkidle"):
+                    self._page.click(login["submit_selector"], timeout=timeout)
+        except Exception as exc:
+            raise RuntimeError(
+                f"login failed: {type(exc).__name__}: {str(exc).splitlines()[0][:160]}"
+            ) from exc
+        log.info("login successful")
+
+    def _navigate_with_retry(self, url: str, timeout_ms: int, max_attempts: int = 2) -> None:
+        last_exc: Exception | None = None
+        for attempt in range(1, max_attempts + 1):
+            try:
+                self._page.goto(url, wait_until="networkidle", timeout=timeout_ms)
+                return
+            except Exception as exc:
+                msg = str(exc)
+                retryable = any(s in msg for s in _RETRYABLE_NAV_SUBSTRINGS)
+                if attempt == max_attempts or not retryable:
+                    raise
+                backoff = 0.5 * attempt
+                log.warning(
+                    "navigation to %s attempt %d failed (%s); retrying in %.1fs",
+                    url,
+                    attempt,
+                    msg.splitlines()[0][:120],
+                    backoff,
+                )
+                time.sleep(backoff)
+                last_exc = exc
+        if last_exc:
+            raise last_exc
 
     @property
     def page(self):
         return self._page
 
     def close(self) -> None:
-        try:
-            if self._context:
+        # Teardown happens in strict reverse order. We log failures at
+        # DEBUG so we don't spam production logs when the remote end
+        # has already gone away, but we do record *something* — silent
+        # `except: pass` has bitten us when Chromium leaked processes.
+        if self._context is not None:
+            try:
                 self._context.close()
-        except Exception:
-            pass
-        try:
-            if self._browser:
+            except Exception as exc:
+                log.debug("context.close() failed: %s", exc)
+            finally:
+                self._context = None
+        if self._browser is not None:
+            try:
                 self._browser.close()
-        except Exception:
-            pass
-        try:
-            if self._pw:
+            except Exception as exc:
+                log.debug("browser.close() failed: %s", exc)
+            finally:
+                self._browser = None
+        if self._pw is not None:
+            try:
                 self._pw.stop()
-        except Exception:
-            pass
+            except Exception as exc:
+                log.debug("playwright.stop() failed: %s", exc)
+            finally:
+                self._pw = None
 
 
 @contextmanager
@@ -102,5 +216,19 @@ def open_page(url: str, options: dict[str, Any], headless: bool = True):
     try:
         page = mgr.launch(url, options)
         yield page
+    finally:
+        mgr.close()
+
+
+@contextmanager
+def open_browser(first_url: str, options: dict[str, Any], headless: bool = True):
+    """Context manager that yields the full BrowserManager so the caller
+    can call `mgr.goto(next_url)` for multi-page audits without tearing
+    down the context between pages.
+    """
+    mgr = BrowserManager(headless=headless)
+    try:
+        mgr.launch(first_url, options)
+        yield mgr
     finally:
         mgr.close()

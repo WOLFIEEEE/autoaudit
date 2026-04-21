@@ -13,6 +13,8 @@ services:
       REDIS_URL: redis://redis:6379/0
       DATABASE_URL: sqlite:////app/data/audits.db
       SKIP_NVDA: "true"
+      LOG_FORMAT: "json"
+      LOG_LEVEL: "INFO"
     volumes:
       - ./data:/app/data
     ports:
@@ -27,7 +29,15 @@ services:
       REDIS_URL: redis://redis:6379/0
       DATABASE_URL: sqlite:////app/data/audits.db
       SKIP_NVDA: "true"
+      LOG_FORMAT: "json"
+      LOG_LEVEL: "INFO"
+      CELERY_POOL: "prefork"
+      CELERY_CONCURRENCY: "2"
     volumes:
       - ./data:/app/data
     command: python scripts/run_worker.py
+    # No HTTP healthcheck for the worker; Celery doesn't expose an
+    # endpoint by default. Orchestrators should watch the process.
+    healthcheck:
+      disable: true
     restart: unless-stopped

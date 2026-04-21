@@ -227,19 +227,122 @@ def analyze(tree: dict[str, Any] | None) -> list[dict[str, Any]]:
     return issues
 
 
-def run(page, options: dict[str, Any] | None = None) -> dict[str, Any]:  # noqa: ARG001
-    """Snapshot the Chromium a11y tree and run the Path A analyzer."""
-    start = time.time()
+def _snapshot_via_legacy_api(page) -> dict[str, Any] | None:
+    """Playwright <= 1.55 exposes page.accessibility.snapshot(). Returns None
+    if the attribute is missing or the call fails."""
+    acc = getattr(page, "accessibility", None)
+    if acc is None:
+        return None
     try:
-        # interesting_only=False gives us every node, including generic ones
-        # that normally get filtered out — we *want* those, because
-        # "focusable generic" is one of our rules.
-        tree = page.accessibility.snapshot(interesting_only=False)
+        return acc.snapshot(interesting_only=False)
     except Exception as exc:
-        log.exception("accessibility snapshot failed")
+        log.debug("legacy accessibility snapshot failed: %s", exc)
+        return None
+
+
+def _snapshot_via_cdp(page) -> dict[str, Any] | None:
+    """Build a Playwright-shape snapshot from Chrome DevTools Protocol.
+
+    Works on every Playwright version (1.44 → latest). The CDP returns a
+    flat list of AXNodes; we re-parent them into the nested tree shape
+    the analyzer expects (role, name, level, children).
+
+    CDP marks "uninteresting" nodes (purely presentational containers,
+    anonymous generics) with `ignored=true`. We keep those in the raw
+    map but skip them in the emitted tree, promoting their children up
+    to the nearest non-ignored ancestor — otherwise a tree like
+    `body > ignored_div > nav` would lose the nav entirely.
+    """
+    try:
+        client = page.context.new_cdp_session(page)
+        resp = client.send("Accessibility.getFullAXTree")
+    except Exception as exc:
+        log.debug("CDP Accessibility.getFullAXTree failed: %s", exc)
+        return None
+
+    nodes_raw: list[dict[str, Any]] = resp.get("nodes") or []
+    if not nodes_raw:
+        return None
+
+    # Build two maps: id → raw (for traversal), id → node (for emission).
+    raw_by_id: dict[str, dict[str, Any]] = {}
+    node_by_id: dict[str, dict[str, Any]] = {}
+    root_id: str | None = None
+
+    for n in nodes_raw:
+        nid = n["nodeId"]
+        raw_by_id[nid] = n
+        role_obj = n.get("role") or {}
+        name_obj = n.get("name") or {}
+        props = {p["name"]: p["value"] for p in (n.get("properties") or [])}
+        node: dict[str, Any] = {
+            "role": (role_obj.get("value") or "").lower(),
+            "name": name_obj.get("value") or "",
+            "children": [],
+        }
+        if "disabled" in props:
+            node["disabled"] = bool((props.get("disabled") or {}).get("value"))
+        if "level" in props:
+            node["level"] = (props.get("level") or {}).get("value")
+        node_by_id[nid] = node
+
+        if role_obj.get("value") in ("RootWebArea", "WebArea") and root_id is None:
+            root_id = nid
+
+    # Fallback: if CDP didn't label a RootWebArea (rare), use the first
+    # node with no parent pointer, which the walker relies on anyway.
+    if root_id is None:
+        # Find nodes that are never referenced as a childId.
+        referenced: set[str] = set()
+        for n in nodes_raw:
+            for c in n.get("childIds") or []:
+                referenced.add(c)
+        for n in nodes_raw:
+            if n["nodeId"] not in referenced:
+                root_id = n["nodeId"]
+                break
+    if root_id is None:
+        return None
+
+    def _emit_children(node_id: str, depth: int = 0) -> list[dict[str, Any]]:
+        # Defensive recursion cap for malformed trees.
+        if depth > 200:
+            return []
+        out: list[dict[str, Any]] = []
+        for cid in raw_by_id.get(node_id, {}).get("childIds") or []:
+            craw = raw_by_id.get(cid)
+            if craw is None:
+                continue
+            if craw.get("ignored"):
+                # Skip this node in the emitted tree but pull up its children.
+                out.extend(_emit_children(cid, depth + 1))
+            else:
+                cnode = node_by_id[cid]
+                cnode["children"] = _emit_children(cid, depth + 1)
+                out.append(cnode)
+        return out
+
+    root_node = node_by_id[root_id]
+    root_node["children"] = _emit_children(root_id)
+    return root_node
+
+
+def run(page, options: dict[str, Any] | None = None) -> dict[str, Any]:  # noqa: ARG001
+    """Snapshot the Chromium a11y tree and run the Path A analyzer.
+
+    Tries the legacy `page.accessibility.snapshot()` first (available on
+    Playwright <= 1.55), falls back to CDP `Accessibility.getFullAXTree`
+    on newer versions which removed the sugar API.
+    """
+    start = time.time()
+    tree = _snapshot_via_legacy_api(page)
+    if tree is None:
+        tree = _snapshot_via_cdp(page)
+
+    if tree is None:
         return {
             "ran": False,
-            "error": str(exc),
+            "error": "accessibility snapshot unavailable via legacy API or CDP",
             "issues": [],
             "duration_seconds": round(time.time() - start, 3),
         }
