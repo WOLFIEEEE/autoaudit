@@ -1,54 +1,63 @@
 # Accessibility Audit Server
 
-A FastAPI server that takes a URL and returns a structured WCAG 2.2 audit. One endpoint in, full audit out. Designed for site-owner tooling — accessibility testing on your own sites, integrated into CI or run ad-hoc.
+A production-ready FastAPI service that audits web pages for WCAG 2.2 conformance. Ten analysis modules, real-NVDA support via a Windows worker, multi-page crawl, form-based login, and a structured JSON/HTML report.
 
-Every audit module in the plan ships with real analysis, verified by an end-to-end Playwright integration test that runs the full pipeline (browser + axe-core injection + 9 modules + scorer + deduplicator) against a fixture page with planted issues. The only deferred piece is **Path B** of the screen-reader module — real NVDA speech capture, which needs a Windows host.
+One URL in, full audit out. Designed for site-owner tooling — run it against your own sites from CI, as a scheduled job, or ad-hoc from the CLI.
+
+Verified against real sites:
+
+| Target                                            | Score | Issues found |
+|---------------------------------------------------|------:|-------------:|
+| `example.com` (minimal baseline)                   | 100/A | 0            |
+| `w3.org/WAI/demos/bad/before/home.html` (known-bad) | 0/F   | 111          |
+| `bbc.com` (production site)                        | 0/F   | 34           |
 
 - **API reference:** [docs/api.md](docs/api.md)
 - **Rule catalog:** [docs/rules.md](docs/rules.md)
 - **Configuration reference:** [docs/configuration.md](docs/configuration.md)
 - **Architecture notes:** [docs/architecture.md](docs/architecture.md)
+- **Windows NVDA worker setup:** [docs/windows_worker.md](docs/windows_worker.md)
 
 ---
 
 ## Table of contents
 
-- [Status](#status)
+- [What it does](#what-it-does)
 - [Quick start — local](#quick-start--local)
-- [Quick start — Docker](#quick-start--docker)
+- [Quick start — Docker Compose](#quick-start--docker-compose)
+- [Deploy on Coolify / any PaaS](#deploy-on-coolify--any-paas)
+- [NVDA (Path B) on a Windows laptop](#nvda-path-b-on-a-windows-laptop)
 - [API overview](#api-overview)
-- [Rule catalog overview](#rule-catalog-overview)
-- [robots.txt policy](#robotstxt-policy)
+- [Multi-page audits](#multi-page-audits)
+- [Authenticated audits (form login)](#authenticated-audits-form-login)
+- [Configuration](#configuration)
+- [Testing](#testing)
+- [What's covered — and what isn't](#whats-covered--and-what-isnt)
 - [Repository layout](#repository-layout)
-- [Running tests](#running-tests)
-- [Extending the server](#extending-the-server)
-- [What differentiates this from axe-core / Lighthouse / Pa11y / WAVE](#what-differentiates-this-from-axe-core--lighthouse--pa11y--wave)
 
 ---
 
-## Status
+## What it does
 
-| Component         | State          | Notes |
-|-------------------|----------------|-------|
-| FastAPI API       | Working        | 5 endpoints, full OpenAPI docs at `/docs` when running |
-| Celery + Redis    | Working        | Background job queue with graceful degradation if Redis absent |
-| SQLite store      | Working        | Results persisted per `job_id` |
-| Redis cache       | Optional       | Same-URL results cached for `CACHE_TTL_SECONDS` (default 900s) |
-| Playwright        | Working        | Chromium, headless by default |
-| axe-core          | Working        | Injected from local vendor file or CDN |
-| Scoring + grading | Working        | Overall + per-WCAG-principle scores, A–F grade |
-| Deduplication     | Working        | `(selector, rule)` keying; higher severity wins |
-| structure         | Working        | 6 rules |
-| aria              | Working        | 4 rules |
-| media             | Working        | 5 rules |
-| cognitive         | Working        | 3 rules |
-| visual            | Working        | 3 rules (static; contrast handled by axe) |
-| keyboard          | Working        | 5 rules (real tab walk) |
-| forms             | Working        | 4 rules |
-| responsive        | Working        | 3 rules |
-| screen_reader     | Path A working | 4 rules via Chromium a11y tree. Path B (real NVDA) deferred |
+Per audit, the pipeline runs:
 
-**Total: 37 custom rules + full axe-core ruleset at the configured WCAG level.**
+1. **Playwright** launches headless Chromium, applies cookies / HTTP auth / form login if configured.
+2. **10 analysis modules** run against the loaded page:
+   - `wcag_engine` — axe-core (industry standard rule engine)
+   - `structure` — landmarks, headings, language
+   - `aria` — roles, labelling, hidden-focusable
+   - `media` — image/video alt text and captions
+   - `cognitive` — link text quality, duplicate labels
+   - `visual` — motion, tiny text, contrast gaps
+   - `responsive` — viewport, target size
+   - `keyboard` — tab order, focus indicators
+   - `forms` — labels, autocomplete, error handling
+   - `preferences` — `prefers-reduced-motion` and `forced-colors` (Windows High Contrast) support
+   - `screen_reader` (Path A) — Chromium a11y-tree analysis
+   - `screen_reader` (Path B) — real NVDA speech capture (Windows worker)
+3. **Deduplicator** collapses overlapping findings (axe + a custom module flagging the same element).
+4. **Scorer** computes a 0-100 score, an A-F grade, and per-WCAG-principle breakdowns.
+5. **Result** is saved to SQLite, cached in Redis, and available as JSON or a rendered HTML report.
 
 ---
 
@@ -56,287 +65,317 @@ Every audit module in the plan ships with real analysis, verified by an end-to-e
 
 ### Prerequisites
 
-- Python 3.11+
-- Redis (only for the queued `/audit` endpoint; `/audit/quick` is synchronous and needs no Redis)
+- Python 3.11+ (tested on 3.9 through 3.13)
+- Redis (only required for the background queue; the quick endpoint works without it)
 
 ### Install
 
 ```bash
-pip install -r requirements.txt
-playwright install chromium
-python scripts/fetch_axe.py         # vendor axe-core locally (recommended)
+git clone https://github.com/WOLFIEEEE/autoaudit.git
+cd autoaudit
+
+python -m pip install --upgrade pip
+python -m pip install -r requirements.txt
+
+# Install the Chromium binary Playwright drives:
+python -m playwright install chromium
+
+# Vendor axe-core so the audit can run offline:
+python scripts/fetch_axe.py
 ```
 
-### Run
+### Run the server
 
 ```bash
-# Terminal 1 — Redis (skip if using only /audit/quick)
-docker run --rm -p 6379:6379 redis:7
-
-# Terminal 2 — Celery worker
-python scripts/run_worker.py
-
-# Terminal 3 — API server
+# In one terminal:
 python main.py
+#  -> http://localhost:8000
+#  -> OpenAPI docs at http://localhost:8000/docs
+
+# In a second terminal (if you want the full /audit endpoint):
+redis-server &   # or: docker run -p 6379:6379 redis:7-alpine
+python scripts/run_worker.py
 ```
 
-The server listens on `http://localhost:8000`. OpenAPI docs are auto-generated at `http://localhost:8000/docs`.
+Without Redis+worker, you can still use `/audit/quick` (axe-only, synchronous) and `/health`.
 
-### Smoke test
+### Try it
 
 ```bash
-curl -s -X POST http://localhost:8000/audit/quick \
-  -H 'content-type: application/json' \
-  -d '{"url": "https://example.com"}' | jq '.summary, .modules'
+# Quick audit (axe-core only, synchronous — works without worker):
+curl -X POST http://localhost:8000/audit/quick \
+  -H "Content-Type: application/json" \
+  -d '{"url": "https://www.w3.org/WAI/demos/bad/before/home.html"}'
+
+# Full audit (all modules, async):
+curl -X POST http://localhost:8000/audit \
+  -H "Content-Type: application/json" \
+  -d '{"url": "https://example.com"}'
+#  -> {"job_id": "...", "status": "queued", "poll_url": "/audit/..."}
+
+# Poll:
+curl http://localhost:8000/audit/<job_id>
+
+# Human-readable report:
+open http://localhost:8000/audit/<job_id>/html
 ```
 
 ---
 
-## Quick start — Docker
+## Quick start — Docker Compose
+
+One command brings up the whole stack (server + worker + Redis):
 
 ```bash
 docker compose up --build
-curl -s http://localhost:8000/health
 ```
 
-The compose file spins up three containers: `server`, `worker`, and `redis`. SQLite data is persisted in `./data`. NVDA is Windows-only and is not part of the Docker image; see [docs/architecture.md](docs/architecture.md#path-b-real-nvda-worker) for the hybrid deployment that pairs this Docker stack with a Windows worker.
+Services:
+- `server` — FastAPI on `:8000`
+- `worker` — Celery Linux worker (default queue)
+- `redis`  — broker + cache
+
+Data persists in `./data/audits.db`. The server container has a HEALTHCHECK against `/health`, so `docker compose ps` will show health state.
+
+## Deploy on Coolify / any PaaS
+
+The project is Coolify-ready out of the box:
+
+1. Point Coolify at the GitHub repo. It auto-detects `docker-compose.yml`.
+2. Expose port `8000` on the `server` service.
+3. (Optional) Add an `API_KEYS` env var to require Bearer-token auth on every endpoint.
+4. (Optional) Add `RATE_LIMIT_PER_MIN=60` to enable per-IP / per-key rate limiting.
+5. (Optional, recommended) Set `LOG_FORMAT=json` so logs are machine-parseable.
+
+See [docs/configuration.md](docs/configuration.md) for the full env var reference.
+
+**Important caveat:** Coolify runs on Linux. If you want real-NVDA auditing (Path B), the Windows worker lives *outside* Coolify and connects back to the same Redis. See below.
+
+---
+
+## NVDA (Path B) on a Windows laptop
+
+Full setup guide: **[docs/windows_worker.md](docs/windows_worker.md)**. Summary:
+
+### The split
+
+```
+┌─────────────────────────────┐       Celery broker          ┌──────────────────────────┐
+│   Linux server + worker     │  ◄──────(Redis)──────►       │   Windows laptop/VM       │
+│   Coolify / Docker / VM     │                              │                          │
+│   queue=default             │                              │   queue=nvda             │
+│   Path A + all automated    │                              │   Path B (real NVDA)     │
+└─────────────────────────────┘                              └──────────────────────────┘
+```
+
+The Linux worker runs the full audit and saves it with `nvda_status=pending`. If a Windows worker is online, it picks up `audit.run_nvda` from the `nvda` queue, runs NVDA against the same URL, and merges findings into the same DB row. Status progresses: `pending → completed`.
+
+### Quick setup on the laptop
+
+```powershell
+# Windows PowerShell, from the repo root
+git clone https://github.com/WOLFIEEEE/autoaudit.git
+cd autoaudit
+python -m pip install -r requirements.txt
+python -m playwright install chromium
+
+# Install NVDA: https://www.nvaccess.org/download/
+
+# Connect to Redis (Tailscale recommended — see docs for alternatives):
+$env:REDIS_URL = "redis://:your-password@100.x.y.z:6379/0"
+
+# Start the NVDA worker (one-click):
+.\scripts\run_worker_windows.ps1
+```
+
+For "always-on" operation (survives reboots, runs before login), install as a Windows service with NSSM — steps in [docs/windows_worker.md](docs/windows_worker.md#install-as-a-windows-service-always-on).
+
+### Verify
+
+```bash
+# From any client:
+curl -X POST https://your-server/audit \
+  -H "Content-Type: application/json" \
+  -d '{"url": "https://example.com", "options": {"skip_nvda": false}}'
+
+# Poll — nvda_status should go pending → completed:
+curl https://your-server/audit/<job-id> | jq .nvda_status
+```
+
+If `nvda_status` stays `pending`, the Windows worker isn't reaching Redis — see the [troubleshooting table](docs/windows_worker.md#troubleshooting).
 
 ---
 
 ## API overview
 
-Five endpoints. Full schemas, examples, and error shapes in [docs/api.md](docs/api.md).
+| Method | Path                      | Description |
+|--------|---------------------------|-------------|
+| POST   | `/audit`                  | Queue a full audit (single URL or up to 25 URLs) |
+| GET    | `/audit/{job_id}`         | Fetch the result as JSON |
+| GET    | `/audit/{job_id}/html`    | Rendered HTML report |
+| DELETE | `/audit/{job_id}`         | Remove an audit |
+| POST   | `/audit/quick`            | Synchronous axe-only scan (no queue required) |
+| GET    | `/health`                 | Liveness + dependency probe (DB / Redis) |
 
-| Method | Path                         | Purpose                                                    |
-|--------|------------------------------|------------------------------------------------------------|
-| POST   | `/audit`                     | Queue a full audit (returns `job_id`, run asynchronously)  |
-| GET    | `/audit/{job_id}`            | Fetch status + results for a queued audit                  |
-| GET    | `/audit/{job_id}/html`       | Render a human-readable HTML report                        |
-| DELETE | `/audit/{job_id}`            | Delete stored results                                      |
-| POST   | `/audit/quick`               | Synchronous axe-core-only scan (< 10 s typical)            |
-| GET    | `/health`                    | Liveness + platform/NVDA capability                        |
+Full OpenAPI schema at `/docs` when running. Structured reference: [docs/api.md](docs/api.md).
 
-Minimal request:
+---
 
-```json
-{
-    "url": "https://example.com"
-}
+## Multi-page audits
+
+Submit a list of URLs and the orchestrator audits each page in a single browser context (cookies / login persist across pages):
+
+```bash
+curl -X POST http://localhost:8000/audit \
+  -H "Content-Type: application/json" \
+  -d '{
+    "urls": [
+      "https://example.com/",
+      "https://example.com/about",
+      "https://example.com/pricing"
+    ]
+  }'
 ```
 
-Full request with all options:
+The result includes a `pages` array with per-page summaries plus an aggregate top-level `summary` across all pages. Max 25 URLs per request.
+
+---
+
+## Authenticated audits (form login)
+
+Pass a `login` config in `options` — the browser navigates to the login page, fills and submits the form, waits for the success marker, then audits the target URL(s):
 
 ```json
 {
-    "url": "https://example.com",
-    "options": {
-        "level": "aa",
-        "modules": ["all"],
-        "skip_nvda": true,
-        "wait_ms": 400,
-        "max_tabs": 500,
-        "viewport": { "width": 1280, "height": 720 },
-        "cookies": [],
-        "headers": {},
-        "basic_auth": { "username": "", "password": "" },
-        "timeout_seconds": 120
+  "url": "https://app.example.com/dashboard",
+  "options": {
+    "login": {
+      "url": "https://app.example.com/login",
+      "username_selector": "#email",
+      "password_selector": "#password",
+      "submit_selector": "button[type=submit]",
+      "username": "audit-user@example.com",
+      "password": "…",
+      "success_selector": ".user-menu",
+      "timeout_seconds": 15
     }
+  }
 }
 ```
 
-See [docs/api.md](docs/api.md) for the complete response shape, including the summary block (score, grade, per-principle breakdown), the flat `issues` array (every issue, sorted by severity), and the `modules` map (per-module execution metadata).
+Combine with `urls` to audit a whole authenticated flow. Cookies persist across pages in the same audit.
 
 ---
 
-## Rule catalog overview
+## Configuration
 
-37 custom rules plus the full axe-core ruleset at the configured WCAG level. Full descriptions, WCAG mappings, severities, and fix suggestions in [docs/rules.md](docs/rules.md).
+All configuration is environment-variable driven. Highlights:
 
-| Module         | Rules |
-|----------------|-------|
-| wcag_engine    | All axe-core rules matching the configured level tags (`wcag2a`, `wcag2aa`, `wcag21aa`, `wcag22aa`, …) |
-| structure      | `structure-html-lang`, `structure-title-missing`, `structure-no-h1`, `structure-multiple-h1`, `structure-heading-skip`, `structure-no-main`, `structure-table-no-th` |
-| aria           | `aria-invalid-role`, `aria-labelledby-missing`, `aria-describedby-missing`, `aria-hidden-focusable` |
-| media          | `media-img-no-alt`, `media-img-placeholder-alt`, `media-img-decorative-text`, `media-video-no-track`, `media-autoplay` |
-| cognitive      | `cognitive-empty-link`, `cognitive-generic-link-text`, `cognitive-duplicate-link-text` |
-| visual         | `visual-marquee-or-blink`, `visual-infinite-animation`, `visual-tiny-text` |
-| keyboard       | `keyboard-trap-suspected`, `keyboard-no-focus-indicator`, `keyboard-no-accessible-name`, `keyboard-positive-tabindex`, `keyboard-generic-focusable` |
-| forms          | `forms-input-no-label`, `forms-radio-group-no-fieldset`, `forms-aria-invalid-no-description`, `forms-missing-autocomplete` |
-| responsive     | `responsive-viewport-meta-missing`, `responsive-viewport-zoom-disabled`, `responsive-target-size` |
-| screen_reader  | `sr-silent-interactive`, `sr-empty-heading`, `sr-dialog-no-name`, `sr-duplicate-landmark` |
+| Variable                | Default                          | Purpose |
+|-------------------------|----------------------------------|---------|
+| `REDIS_URL`             | `redis://localhost:6379/0`       | Celery broker + cache |
+| `DATABASE_URL`          | `sqlite:///./data/audits.db`     | Audit result persistence (SQLite) |
+| `MAX_AUDIT_SECONDS`     | `180`                            | Celery soft-timeout per audit |
+| `CACHE_TTL_SECONDS`     | `900`                            | Same-URL result cache TTL |
+| `API_KEYS`              | (unset → auth off)               | Comma-separated allowed keys |
+| `RATE_LIMIT_PER_MIN`    | `0` (off)                        | Per-key / per-IP rate limit |
+| `LOG_FORMAT`            | `text`                           | Set to `json` for structured logs |
+| `LOG_LEVEL`             | `INFO`                           |         |
+| `ALLOW_PRIVATE_TARGETS` | `false`                          | Disable SSRF check for local dev |
+| `SKIP_NVDA`             | auto (true everywhere but Windows) | Force-skip Path B |
+| `CELERY_POOL`           | `prefork` on Linux, `solo` on Windows | Worker pool type |
+| `CELERY_CONCURRENCY`    | `2`                              | Worker processes |
+| `CELERY_QUEUES`         | `default`                        | Which queues the worker consumes. Set to `nvda` on Windows. |
+
+Full reference in [docs/configuration.md](docs/configuration.md).
+
+### Security defaults
+
+- **SSRF protection:** `/audit` and `/audit/quick` reject URLs that resolve to private / loopback / link-local / reserved addresses. Override with `ALLOW_PRIVATE_TARGETS=1` for local dev.
+- **Input bounds:** `timeout_seconds`, `viewport` size, header count, cookie count, URL length — all capped. Audit payloads capped at 16 MiB.
+- **API-key auth:** set `API_KEYS` and requests need `X-API-Key: …` or `Authorization: Bearer …`.
+- **Rate limiting:** set `RATE_LIMIT_PER_MIN=60` and the middleware enforces it with LRU eviction (bounded memory).
+- **Exception hygiene:** 500 responses return a request ID, never the stack trace.
 
 ---
 
-## robots.txt policy
+## Testing
 
-**This tool ignores robots.txt by design.** Accessibility auditing is performed on behalf of website owners who have the right to test their own sites. robots.txt is a directive for search-engine crawlers, not for site-owner tooling — Lighthouse, Pa11y, axe-cli, and similar tools all behave the same way.
+```bash
+# Unit + API tests (fast, ~5 s):
+python -m pytest -m "not slow"
 
-This tool:
+# Everything including Playwright integration (needs Chromium + vendor/axe):
+python -m pytest
+```
 
-- Does not import `urllib.robotparser`
-- Does not fetch or parse robots.txt files
-- Uses an honest, identifiable `User-Agent` string
-- Does not crawl beyond the single URL provided
-- Makes no attempt to index content
-- Does **not** use anti-bot-detection flags such as `--disable-blink-features=AutomationControlled`
+170 tests, 4 of which spin up real Chromium against a fixture page. CI runs the fast suite on every push; the slow suite runs nightly.
 
-If you are auditing a site you do not own, ensure you have permission from the site owner before running this tool.
+---
 
-There is intentionally **no `ignore_robots_txt` option** on the request schema. The behavior is not configurable, so exposing the field would misrepresent the API.
+## What's covered — and what isn't
+
+Automated accessibility tooling catches roughly **30-40% of WCAG barriers**. This server is at the high end of that range, but fundamental limits apply.
+
+### Covered
+- WCAG 2.2 A/AA automated rules (axe-core + 9 custom modules)
+- Windows / NVDA screen reader (Path B on Windows worker)
+- Chromium a11y-tree analysis (Path A, cross-platform)
+- `prefers-reduced-motion` and `forced-colors` support detection
+- Multi-page flows with shared cookies / login
+- HTTP basic auth and form-based login
+- Color contrast (via axe-core), target size, keyboard order, ARIA usage
+
+### Not covered (fundamental limits, not bugs)
+- **JAWS** — ~40% of screen reader users, no headless automation exists
+- **VoiceOver (macOS/iOS)** and **TalkBack (Android)** — native mobile a11y
+- **Human judgment** — is alt text actually *useful*? Is the heading outline logical? Are error messages understandable to someone with a cognitive disability?
+- **PDF / document accessibility**
+- **Video caption quality** (presence detectable, accuracy not)
+- **Real user testing** — the only way to find the barriers tooling misses
+
+The HTML report surfaces this disclosure so non-technical stakeholders see it, not just API consumers.
 
 ---
 
 ## Repository layout
 
 ```
-server/                 FastAPI app, Pydantic models, Celery tasks, storage, cache
-    app.py              Route handlers
-    models.py           Request/response schemas
-    tasks.py            Celery task: run_audit_task
-    database.py         SQLite job storage
-    cache.py            Redis cache (optional, degrades gracefully)
-    config.py           Env-var-driven configuration
-audit/                  Audit pipeline
-    orchestrator.py     Runs every module, aggregates, scores, dedups
-    browser.py          Playwright lifecycle
-    wcag_engine.py      axe-core injection + result normalization
-    scorer.py           Score + grade + per-principle breakdown
-    deduplicator.py     (selector, rule) keyed duplicate merger
-    _issue.py           Shared issue-dict helper
-    structure.py        \
-    aria.py              \
-    media.py              |
-    cognitive.py          | Per-module analyzers. Each exposes
-    visual.py             | run(page, options) -> dict plus a
-    keyboard.py           | pure-Python analyze() that tests call
-    forms.py              | with fixture data.
-    responsive.py        /
-    screen_reader.py    /  Path A a11y-tree analyzer + Path B NVDA placeholder
-celery_app.py           Celery factory
-main.py                 Uvicorn entry point
-scripts/
-    fetch_axe.py        Vendor axe-core into ./vendor/
-    run_worker.py       Start a Celery worker
-docs/
-    api.md              Endpoint-by-endpoint API reference
-    rules.md            Every rule, WCAG mapping, severity, fix suggestion
-    configuration.md    Environment variables, options, deployment knobs
-    architecture.md     Component diagram, Path A/B split, queue routing
-tests/
-    test_*.py           Fast unit tests for analyze() functions
-    test_api.py         TestClient-based API endpoint tests
-    integration/
-        test_e2e.py     End-to-end Playwright + axe + orchestrator
-    fixtures/
-        issues_sample.html
-        good_page.html
-        bad_contrast.html
-vendor/
-    axe.min.js          Fetched by scripts/fetch_axe.py
-Dockerfile
-docker-compose.yml
-pytest.ini
-requirements.txt
+autoaudit/
+├── audit/                       # Analysis modules (10 modules + browser driver)
+│   ├── browser.py               # Playwright lifecycle, login, retry
+│   ├── orchestrator.py          # Runs modules, aggregates results, supports multi-URL
+│   ├── wcag_engine.py           # axe-core injection
+│   ├── {structure,aria,media,cognitive,visual,responsive,keyboard,forms}.py
+│   ├── preferences.py           # prefers-reduced-motion / forced-colors
+│   ├── screen_reader.py         # Path A (a11y tree) + Path B (NVDA) stubs
+│   ├── deduplicator.py
+│   └── scorer.py
+├── server/                      # FastAPI app
+│   ├── app.py                   # Routes + /health with dep probes
+│   ├── models.py                # Pydantic schemas, SSRF guard, input bounds
+│   ├── database.py              # SQLite with WAL mode + JSON size caps
+│   ├── cache.py                 # Redis cache (optional)
+│   ├── middleware.py            # Request ID, API key, rate limit, structured logs
+│   ├── tasks.py                 # Celery tasks (run + run_nvda)
+│   └── config.py
+├── templates/report.html.j2     # Rendered HTML audit report
+├── docs/                        # API, rules, configuration, architecture, Windows worker
+├── scripts/
+│   ├── run_worker.py            # Celery worker launcher (queues via env)
+│   ├── run_worker_windows.ps1   # One-click launcher for the NVDA laptop
+│   ├── fetch_axe.py
+│   └── cleanup_audits.py
+├── tests/                       # 166 unit/API tests + 4 integration
+├── Dockerfile                   # With HEALTHCHECK
+├── docker-compose.yml           # server + worker + redis
+├── celery_app.py                # Two-queue routing: default + nvda
+├── main.py
+└── requirements.txt
 ```
 
 ---
 
-## Running tests
+## License
 
-```bash
-# Fast unit tests (no Playwright, no Redis, no network) — ~2 s
-pytest -m "not slow"
-
-# Full suite, including the end-to-end Playwright integration test — ~55 s
-pytest
-```
-
-The fast suite covers scoring, deduplication, tag parsing, API request validation, and every module's pure-Python `analyze()` function with fixture data. No external dependencies.
-
-The `slow` suite adds `tests/integration/test_e2e.py`, which:
-
-- Starts a local HTTP server bound to `tests/fixtures/`
-- Loads a fixture HTML page containing deliberate accessibility failures across every module
-- Runs both `/audit/quick` (axe-core only) and the full orchestrator
-- Asserts that representative rules from each module fire, every module reports `ran: true`, and the deduplicator produces no duplicates
-
-Requires:
-
-- `playwright install chromium` (one-time)
-- `python scripts/fetch_axe.py` (vendors axe-core locally — the test will not reach the CDN in sandboxed CI environments)
-
-If either dependency is missing, the integration test auto-skips with an actionable message rather than failing.
-
----
-
-## Extending the server
-
-Every custom module follows the same shape:
-
-```python
-# audit/<name>.py
-
-_EXTRACT_JS = """() => { /* DOM query that returns a dict */ }"""
-
-def analyze(data: dict) -> list[dict]:
-    """Pure-Python rule logic. Takes extracted DOM data, returns issues.
-    Tests call this directly with fixture dicts."""
-    ...
-
-def run(page, options=None) -> dict:
-    """Thin wrapper: page.evaluate the extractor, call analyze(),
-    return the module-result dict the orchestrator expects."""
-    ...
-```
-
-**To add a new rule to an existing module:**
-
-1. Extend `_EXTRACT_JS` to capture the new data you need from the DOM.
-2. Add a new branch in `analyze()` using the `make_issue(...)` helper in `audit/_issue.py`.
-3. Add a unit test in `tests/test_<module>.py` — call `analyze()` with a fixture dict.
-4. Add a matching `data-issue` marker to `tests/fixtures/issues_sample.html` and extend the e2e assertions.
-
-**To add a new module:**
-
-1. Create `audit/<name>.py` with the pattern above.
-2. Register it in `audit/orchestrator.py`. Static-DOM modules go in `STATIC_MODULES`; interactive modules (those that mutate focus or viewport) are called explicitly in `AuditOrchestrator.run()`.
-3. Write unit tests and fixtures as above.
-
-The orchestrator aggregates issues automatically, the scorer derives penalties from severity, and the deduplicator merges same-element same-rule duplicates. No changes needed anywhere else.
-
-See [docs/architecture.md](docs/architecture.md) for the per-phase execution model and the rationale for running static modules sequentially (Playwright's sync API is greenlet-based and unsafe across threads).
-
----
-
-## What differentiates this from axe-core / Lighthouse / Pa11y / WAVE
-
-| Feature                          | axe | Lighthouse | Pa11y | WAVE | **This tool** |
-|----------------------------------|-----|------------|-------|------|---------------|
-| WCAG automated rules             | ✓   | ✓          | ✓     | ✓    | ✓ (axe-core)  |
-| Full tab order mapping           | —   | —          | —     | —    | ✓             |
-| Keyboard trap detection          | —   | —          | —     | —    | ✓             |
-| Focus-indicator visibility       | —   | —          | —     | —    | ✓             |
-| Positive-tabindex anti-pattern   | —   | —          | —     | —    | ✓             |
-| `<div tabindex>` detection       | —   | —          | —     | —    | ✓             |
-| Placeholder-alt detection        | —   | —          | —     | —    | ✓             |
-| Decorative image with text alt   | —   | —          | —     | —    | ✓             |
-| Target size ≥ 24×24 (WCAG 2.2)   | —   | ✓          | —     | —    | ✓             |
-| Viewport-zoom disabled           | —   | ✓          | —     | —    | ✓             |
-| Duplicate-landmark detection     | —   | —          | —     | —    | ✓             |
-| a11y-tree silent-element         | —   | —          | —     | —    | ✓             |
-| Generic link-text detection      | —   | —          | —     | —    | ✓             |
-| Duplicate link text → different URLs | — | —       | —     | —    | ✓             |
-| aria-invalid without description | —   | —          | —     | —    | ✓             |
-| Missing autocomplete (1.3.5)     | —   | —          | —     | —    | ✓             |
-| Single API endpoint              | —   | —          | —     | —    | ✓             |
-| Scored report with A–F grade     | —   | ✓          | —     | —    | ✓             |
-| Real NVDA announcement capture   | —   | —          | —     | —    | Path B deferred (Windows worker) |
-| robots.txt explicitly ignored    | N/A | N/A        | N/A   | N/A  | ✓ (documented) |
-
----
-
-## License and contributing
-
-Development happens on the `claude/a11y-audit-server-QVeA0` branch. Contributions via PR.
-
-For issues found by a user running this tool against their own site, include the output of `GET /audit/{job_id}` when filing a report so module states and issue dedup keys are visible.
+Add your license here.
