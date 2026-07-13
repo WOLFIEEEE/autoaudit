@@ -212,7 +212,7 @@ def cleanup_old_results(older_than_days: int, *, statuses: tuple[str, ...] = ("c
     placeholders = ",".join("?" for _ in statuses)
     with _connect() as conn:
         cur = conn.execute(
-            f"DELETE FROM audits WHERE status IN ({placeholders}) AND updated_at < ?",
+            f"DELETE FROM audits WHERE status IN ({placeholders}) AND updated_at < ?",  # nosec B608 - only placeholder count is interpolated
             (*statuses, cutoff),
         )
         return cur.rowcount

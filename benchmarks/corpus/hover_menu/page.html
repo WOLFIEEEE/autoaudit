@@ -1,0 +1,28 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <title>Hover-only menu fixture</title>
+  <style>
+    nav li { position: relative; display: inline-block; }
+    /* Submenu hidden at rest; revealed ONLY on :hover — no :focus rule,
+       so keyboard users can never reach its links (WCAG 2.1.1). */
+    nav li ul { position: absolute; visibility: hidden; opacity: 0; }
+    nav li:hover ul { visibility: visible; opacity: 1; }
+  </style>
+</head>
+<body>
+<main>
+  <h1>Hover menu</h1>
+  <nav aria-label="Main">
+    <ul>
+      <li>
+        <a href="/about">About</a>
+        <ul>
+          <li><a href="/about/team">Team</a></li>
+          <li><a href="/about/history">History</a></li>
+        </ul>
+      </li>
+    </ul>
+  </nav>
+</main>
+</body></html>

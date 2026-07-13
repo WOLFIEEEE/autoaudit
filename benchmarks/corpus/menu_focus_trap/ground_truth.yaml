@@ -1,0 +1,10 @@
+notes: |
+  A full-screen overlay hamburger menu (position:fixed, covers the
+  viewport) with no focus trap: Tab moves from the menu's own links onto
+  the page link behind it while the menu is open (WCAG 2.4.3). The
+  focus-trap recipe runs during the orchestrator's default mobile pass
+  (which actuates reveal), so this fires without any explicit option.
+expected:
+  - rule: menu-focus-not-trapped
+    min_count: 1
+    max_count: 1

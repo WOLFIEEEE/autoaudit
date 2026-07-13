@@ -1,0 +1,15 @@
+notes: |
+  A slideshow whose active slide rotates on a 700ms timer with no pause /
+  stop control (WCAG 2.2.1). The auto-advance recipe runs during the
+  orchestrator's default mobile pass (which actuates reveal), observes
+  the active slide changing, and fires. The timer keeps running at any
+  viewport, so it is caught without an explicit option.
+expected:
+  - rule: carousel-auto-advance
+    min_count: 1
+    max_count: 1
+  # No live region updates when the slide changes, so the change is also
+  # unannounced to screen readers (WCAG 4.1.3).
+  - rule: carousel-change-not-announced
+    min_count: 1
+    max_count: 1

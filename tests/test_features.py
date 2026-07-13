@@ -12,7 +12,6 @@ from __future__ import annotations
 
 import os
 import time
-from types import SimpleNamespace
 from unittest.mock import MagicMock, patch
 
 import pytest
@@ -23,6 +22,7 @@ def _fresh_app(tmp_path, **env: str) -> TestClient:
     db_path = tmp_path / "features.db"
     os.environ["DATABASE_URL"] = f"sqlite:///{db_path}"
     os.environ["SKIP_NVDA"] = "true"
+    os.environ["CACHE_ENABLED"] = "false"
     for k in (
         "API_KEYS",
         "RATE_LIMIT_PER_MIN",
@@ -161,6 +161,26 @@ def test_login_config_rejects_non_http_url():
         )
 
 
+def test_interaction_expect_requires_at_least_one_assertion():
+    from pydantic import ValidationError
+
+    from server.models import InteractionExpect
+
+    with pytest.raises(ValidationError, match="at least one"):
+        InteractionExpect()
+
+
+def test_interaction_attribute_expectation_has_exact_shape():
+    from pydantic import ValidationError
+
+    from server.models import InteractionExpect
+
+    with pytest.raises(ValidationError):
+        InteractionExpect(
+            attribute_equals={"selector": "#menu", "name": "aria-expanded"}
+        )
+
+
 # ---------------------------------------------------------------
 # Preferences module
 
@@ -262,6 +282,10 @@ def test_default_queue_is_default():
 # NVDA follow-up — platform gating
 
 
+@pytest.mark.skipif(
+    __import__("platform").system() == "Windows",
+    reason="This test verifies the non-Windows early-return path.",
+)
 def test_nvda_follow_up_skips_on_non_windows():
     """On a Linux/Mac host the follow-up helper returns a skipped patch
     without touching Playwright — that's what makes misrouting safe."""

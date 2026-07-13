@@ -12,9 +12,9 @@ Covers:
 
 from __future__ import annotations
 
-import json
 import os
 import time
+from types import SimpleNamespace
 from unittest.mock import patch
 
 import pytest
@@ -26,6 +26,7 @@ def _fresh_app(tmp_path, **env: str) -> TestClient:
     db_path = tmp_path / "hard.db"
     os.environ["DATABASE_URL"] = f"sqlite:///{db_path}"
     os.environ["SKIP_NVDA"] = "true"
+    os.environ["CACHE_ENABLED"] = "false"
     # ALLOW_PRIVATE_TARGETS defaults off; individual tests can set it.
     for k in (
         "API_KEYS",
@@ -91,6 +92,36 @@ def test_audit_accepts_public_url(tmp_path):
             assert resp.status_code == 503, resp.text
 
 
+def test_login_url_gets_the_same_ssrf_validation(tmp_path):
+    with _fresh_app(tmp_path) as c:
+        resp = c.post(
+            "/audit",
+            json={
+                "url": "https://example.com/",
+                "options": {
+                    "login": {
+                        "url": "http://169.254.169.254/latest/meta-data/",
+                        "username_selector": "#user",
+                        "password_selector": "#pass",
+                        "submit_selector": "button",
+                        "username": "user",
+                        "password": "secret",
+                    }
+                },
+            },
+        )
+        assert resp.status_code == 422
+
+
+def test_url_rejects_embedded_credentials(tmp_path):
+    with _fresh_app(tmp_path) as c:
+        resp = c.post(
+            "/audit", json={"url": "https://user:secret@example.com/"}
+        )
+        assert resp.status_code == 422
+        assert "credentials" in resp.text
+
+
 def test_allow_private_opts_out_of_ssrf_check(tmp_path):
     with _fresh_app(tmp_path, ALLOW_PRIVATE_TARGETS="1") as c:
         with patch("server.cache.get_cached_result", return_value=None), \
@@ -132,6 +163,31 @@ def test_audit_rejects_too_many_headers(tmp_path):
             json={"url": "https://example.com/", "options": {"headers": headers}},
         )
         assert resp.status_code == 422
+
+
+def test_audit_rejects_unsafe_custom_header(tmp_path):
+    with _fresh_app(tmp_path) as c:
+        resp = c.post(
+            "/audit",
+            json={
+                "url": "https://example.com/",
+                "options": {"headers": {"Host": "internal.service"}},
+            },
+        )
+        assert resp.status_code == 422
+
+
+def test_unknown_request_option_is_rejected(tmp_path):
+    with _fresh_app(tmp_path) as c:
+        resp = c.post(
+            "/audit",
+            json={
+                "url": "https://example.com/",
+                "options": {"screeshots": True},
+            },
+        )
+        assert resp.status_code == 422
+        assert "screeshots" in resp.text
 
 
 # --- /health ---------------------------------------------------------------
@@ -194,6 +250,31 @@ def test_quick_audit_returns_504_on_timeout(tmp_path):
                 assert "timed out" in resp.text.lower()
         finally:
             app_module._QUICK_AUDIT_TIMEOUT_SECONDS = original
+
+
+def test_single_page_endpoints_reject_urls_list(tmp_path):
+    with _fresh_app(tmp_path, ALLOW_PRIVATE_TARGETS="1") as c:
+        payload = {"urls": ["http://127.0.0.1/a", "http://127.0.0.1/b"]}
+        assert c.post("/audit/quick", json=payload).status_code == 422
+        assert c.post("/announce", json=payload).status_code == 422
+
+
+def test_request_body_size_limit_is_enforced(tmp_path):
+    with _fresh_app(tmp_path) as c:
+        payload = b"x" * (16 * 1024 * 1024 + 1)
+        resp = c.post(
+            "/audit", content=payload, headers={"Content-Type": "application/json"}
+        )
+        assert resp.status_code == 413
+
+
+def test_untrusted_request_id_is_replaced(tmp_path):
+    with _fresh_app(tmp_path) as c:
+        supplied = "x" * 500
+        resp = c.get("/health", headers={"X-Request-ID": supplied})
+        request_id = resp.headers["X-Request-ID"]
+        assert request_id != supplied
+        assert len(request_id) == 32
 
 
 # --- Database: WAL + size cap ---------------------------------------------
@@ -281,6 +362,82 @@ def test_cache_ping_returns_false_when_no_client(tmp_path):
     reload(sc_cache)
     sc_cache._client = None
     assert sc_cache.ping() is False
+
+
+def test_cache_key_covers_options_and_is_order_independent():
+    from server import cache as sc_cache
+
+    first = sc_cache._url_key(
+        "https://example.com/", {"level": "aa", "viewport": {"width": 1280}}
+    )
+    reordered = sc_cache._url_key(
+        "https://example.com/", {"viewport": {"width": 1280}, "level": "aa"}
+    )
+    different = sc_cache._url_key(
+        "https://example.com/", {"level": "aaa", "viewport": {"width": 1280}}
+    )
+    assert first == reordered
+    assert first != different
+
+
+def test_cache_client_is_not_disabled_by_transient_startup_outage(monkeypatch):
+    from importlib import reload
+
+    import server.cache as sc_cache
+    import server.config as sc_config
+
+    monkeypatch.setenv("CACHE_ENABLED", "true")
+    reload(sc_config)
+    reloaded = reload(sc_cache)
+    assert reloaded._client is not None
+
+
+def test_sensitive_audits_bypass_shared_cache():
+    from unittest.mock import MagicMock
+
+    from server import cache as sc_cache
+
+    fake = MagicMock()
+    sc_cache._client = fake
+    options = {"login": {"username": "alice", "password": "secret"}}
+
+    assert sc_cache.get_cached_result("https://example.com/", options) is None
+    sc_cache.set_cached_result("https://example.com/", {"status": "completed"}, options)
+
+    fake.get.assert_not_called()
+    fake.setex.assert_not_called()
+
+
+def test_browser_request_guard_blocks_private_redirect_target(monkeypatch):
+    from unittest.mock import MagicMock
+
+    from audit.browser import BrowserManager
+
+    monkeypatch.delenv("ALLOW_PRIVATE_TARGETS", raising=False)
+    route = MagicMock()
+    request = MagicMock(url="http://169.254.169.254/latest/meta-data/")
+
+    BrowserManager._guard_request(route, request)
+
+    route.abort.assert_called_once_with("blockedbyclient")
+    route.continue_.assert_not_called()
+
+
+def test_axe_runtime_refuses_unvendored_third_party_script(tmp_path):
+    from unittest.mock import MagicMock
+
+    from audit import wcag_engine
+
+    missing = tmp_path / "axe.min.js"
+    config = SimpleNamespace(axe_script_path=str(missing))
+    page = MagicMock()
+
+    with patch.object(wcag_engine, "CONFIG", config), pytest.raises(
+        FileNotFoundError, match="scripts/fetch_axe.py"
+    ):
+        wcag_engine._inject_axe(page)
+
+    page.add_script_tag.assert_not_called()
 
 
 # --- Rate limiter bucket cap ----------------------------------------------

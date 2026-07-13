@@ -15,8 +15,11 @@ correlating with upstream logs); if they don't, we generate one.
 from __future__ import annotations
 
 import json
+import hashlib
+import hmac
 import logging
 import os
+import re
 import time
 import uuid
 from collections import deque
@@ -32,6 +35,59 @@ from starlette.responses import JSONResponse, Response
 _REQUEST_ID: ContextVar[str | None] = ContextVar("request_id", default=None)
 
 log = logging.getLogger("a11y_audit")
+
+MAX_REQUEST_BODY_BYTES = 16 * 1024 * 1024
+_REQUEST_ID_RE = re.compile(r"^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$")
+
+
+class _RequestBodyTooLarge(Exception):
+    pass
+
+
+class RequestBodyLimitMiddleware:
+    """Reject oversized fixed-length and streamed request bodies."""
+
+    def __init__(self, app, max_bytes: int = MAX_REQUEST_BODY_BYTES):
+        self.app = app
+        self.max_bytes = max_bytes
+
+    async def __call__(self, scope, receive, send) -> None:
+        if scope.get("type") != "http":
+            await self.app(scope, receive, send)
+            return
+
+        headers = {k.lower(): v for k, v in scope.get("headers", [])}
+        raw_length = headers.get(b"content-length")
+        if raw_length:
+            try:
+                if int(raw_length) > self.max_bytes:
+                    response = JSONResponse(
+                        {"detail": "Request body too large"}, status_code=413
+                    )
+                    await response(scope, receive, send)
+                    return
+            except ValueError:
+                # The HTTP server normally rejects malformed Content-Length.
+                pass
+
+        received = 0
+
+        async def limited_receive():
+            nonlocal received
+            message = await receive()
+            if message.get("type") == "http.request":
+                received += len(message.get("body", b""))
+                if received > self.max_bytes:
+                    raise _RequestBodyTooLarge
+            return message
+
+        try:
+            await self.app(scope, limited_receive, send)
+        except _RequestBodyTooLarge:
+            response = JSONResponse(
+                {"detail": "Request body too large"}, status_code=413
+            )
+            await response(scope, receive, send)
 
 
 def current_request_id() -> str | None:
@@ -92,7 +148,8 @@ class RequestIdMiddleware(BaseHTTPMiddleware):
     """Attach a request ID to every request; expose via X-Request-ID."""
 
     async def dispatch(self, request: Request, call_next: Callable) -> Response:
-        rid = request.headers.get("x-request-id") or uuid.uuid4().hex
+        supplied = request.headers.get("x-request-id", "")
+        rid = supplied if _REQUEST_ID_RE.fullmatch(supplied) else uuid.uuid4().hex
         token = _REQUEST_ID.set(rid)
         start = time.perf_counter()
         try:
@@ -149,7 +206,11 @@ class ApiKeyMiddleware(BaseHTTPMiddleware):
             if auth.lower().startswith("bearer "):
                 supplied = auth[7:].strip()
 
-        if supplied not in self._keys:
+        matched = next(
+            (key for key in self._keys if hmac.compare_digest(supplied or "", key)),
+            None,
+        )
+        if matched is None:
             # Keep the error body neutral — don't leak whether auth is enabled
             # or whether the key was absent vs wrong.
             return JSONResponse(
@@ -157,7 +218,7 @@ class ApiKeyMiddleware(BaseHTTPMiddleware):
             )
 
         # Stash the key ID (first 8 chars) so rate limiter can key off it.
-        request.state.api_key_id = supplied[:8]
+        request.state.api_key_id = hashlib.sha256(matched.encode("utf-8")).hexdigest()[:16]
         return await call_next(request)
 
 

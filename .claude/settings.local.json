@@ -1,0 +1,7 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(python -m py_compile server/app.py server/models.py server/cache.py audit/orchestrator.py audit/sitemap.py audit/keyboard.py audit/forms.py audit/ai_enrich.py audit/vlm.py audit/screen_reader.py audit/mobile.py audit/_issue.py audit/dynamic.py audit/screenshots.py scripts/audit_cli.py scripts/gui.py tests/test_wcag.py tests/integration/test_e2e.py)"
+    ]
+  }
+}

@@ -8,7 +8,6 @@ fixture row in the DB).
 
 from __future__ import annotations
 
-import json
 import os
 import time
 
@@ -25,6 +24,7 @@ def _fresh_app(tmp_path, **env: str) -> TestClient:
     db_path = tmp_path / "test.db"
     os.environ["DATABASE_URL"] = f"sqlite:///{db_path}"
     os.environ["SKIP_NVDA"] = "true"
+    os.environ["CACHE_ENABLED"] = "false"
     for k in ("API_KEYS", "RATE_LIMIT_PER_MIN", "LOG_FORMAT", "LOG_LEVEL"):
         os.environ.pop(k, None)
     os.environ.update(env)

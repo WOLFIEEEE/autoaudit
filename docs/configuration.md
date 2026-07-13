@@ -17,9 +17,11 @@ All server/worker configuration is env-var driven. See [server/config.py](../ser
 | `REDIS_URL`           | `redis://localhost:6379/0`                                   | Celery broker + result backend and result cache |
 | `DATABASE_URL`        | `sqlite:///./data/audits.db`                                 | Audit result storage. Relative paths resolve against the project root |
 | `AXE_SCRIPT_PATH`     | `vendor/axe.min.js`                                          | Local axe-core bundle. Relative paths resolve against the project root. Loaded first if present |
-| `AXE_CDN_URL`         | `https://cdnjs.cloudflare.com/ajax/libs/axe-core/4.9.1/axe.min.js` | Fallback when the local vendor file is missing |
+| `AXE_CDN_URL`         | `https://cdnjs.cloudflare.com/ajax/libs/axe-core/4.12.1/axe.min.js` | Checksum-verified fallback used only by `scripts/fetch_axe.py`; audits require a local vendor file |
 | `SKIP_NVDA`           | `""` (false)                                                 | When `1`/`true`/`yes`, skip Path B (real NVDA) even on Windows. Non-Windows hosts always skip |
-| `CACHE_TTL_SECONDS`   | `900`                                                        | Redis cache TTL for same-URL audit results |
+| `CACHE_TTL_SECONDS`   | `900`                                                        | Redis cache TTL for equivalent URL + option audit results |
+| `CACHE_ENABLED`       | `true`                                                       | Set false to disable only the optional result cache |
+| `REDIS_REQUIRED`      | `false`                                                      | Make `/health` fail when Redis is unavailable (enabled in Docker Compose) |
 | `MAX_AUDIT_SECONDS`   | `180`                                                        | Celery soft time limit. Hard limit is +30s |
 | `API_KEYS`            | `""` (disabled)                                              | Comma-separated list of accepted keys. When set, every endpoint except `/health` and the docs endpoints requires `X-API-Key` or `Authorization: Bearer <key>` |
 | `RATE_LIMIT_PER_MIN`  | `0` (disabled)                                               | Per-key sliding-window rate limit. Key is the API key ID when auth is on, client IP otherwise |

@@ -136,6 +136,12 @@
             <span class="label">Total issues</span>
             <span class="value">{{ summary.total_issues or 0 }}</span>
         </div>
+        {% if summary.distinct_defects is defined and summary.distinct_defects is not none %}
+        <div class="stat">
+            <span class="label">Distinct defects</span>
+            <span class="value">{{ summary.distinct_defects }}</span>
+        </div>
+        {% endif %}
         {% for sev in ['critical', 'serious', 'moderate', 'minor'] %}
         <div class="stat">
             <span class="label">{{ sev|capitalize }}</span>
@@ -143,6 +149,12 @@
         </div>
         {% endfor %}
     </section>
+
+    {% if summary.weakest_principle %}
+    <p class="muted" style="margin-top: -0.5rem;">
+        Weakest principle: <strong>{{ summary.weakest_principle|capitalize }}</strong> — focus remediation here first.
+    </p>
+    {% endif %}
 
     <h2>By WCAG principle</h2>
     <table>
@@ -157,6 +169,52 @@
             {% endfor %}
         </tbody>
     </table>
+
+    {% if summary.by_level %}
+    <h2>Detected issues by WCAG level</h2>
+    <p class="muted" style="margin-top: -0.5rem;">
+        An automated scan cannot determine WCAG conformance. A clean result
+        means this rule set detected no blockers at that level; manual review
+        of all applicable success criteria, complete pages, and processes is
+        still required. "Unmapped" issues come from custom rules not tied to
+        a specific success criterion.
+    </p>
+    <table>
+        <thead><tr>
+            <th>Level</th>
+            <th>Issues</th>
+            <th>Critical</th><th>Serious</th><th>Moderate</th><th>Minor</th>
+            <th>Automated result</th>
+        </tr></thead>
+        <tbody>
+            {% set conf = summary.conformance or {} %}
+            {% for lvl in ['A', 'AA', 'AAA'] %}
+                {% set data = summary.by_level.get(lvl) or {} %}
+            <tr>
+                <td><strong>{{ lvl }}</strong></td>
+                <td>{{ data.issues or 0 }}</td>
+                <td>{{ (data.by_severity or {}).get('critical', 0) }}</td>
+                <td>{{ (data.by_severity or {}).get('serious', 0) }}</td>
+                <td>{{ (data.by_severity or {}).get('moderate', 0) }}</td>
+                <td>{{ (data.by_severity or {}).get('minor', 0) }}</td>
+                <td>
+                    {% if (conf.get('no_detected_failures') or {}).get(lvl) %}
+                        <span class="severity" style="background: rgba(26,127,55,0.15); color: var(--pass);">no detected blockers</span>
+                    {% else %}
+                        <span class="severity critical">blockers detected</span>
+                    {% endif %}
+                </td>
+            </tr>
+            {% endfor %}
+            <tr>
+                <td><em>Unmapped</em></td>
+                <td>{{ (summary.by_level.get('unmapped') or {}).issues or 0 }}</td>
+                <td colspan="4" class="muted" style="text-align: center;">no specific SC mapped</td>
+                <td class="muted">—</td>
+            </tr>
+        </tbody>
+    </table>
+    {% endif %}
 
     <h2>Modules</h2>
     <table class="modules-table">
@@ -176,6 +234,142 @@
         </tbody>
     </table>
 
+    {% if audit.coverage and audit.coverage.truncated %}
+    <aside style="margin: 1rem 0; padding: 0.75rem 1rem; border: 1px solid var(--serious); border-radius: 6px; background: rgba(208,112,0,0.06);">
+        <strong>Keyboard walk truncated.</strong>
+        {{ audit.coverage.note or ('Walked ' ~ audit.coverage.stops_walked ~ '/' ~ audit.coverage.max_tabs ~ ' stops without cycling.') }}
+        Keyboard findings below cover only the first {{ audit.coverage.stops_walked }} focusable elements — issues beyond that point are not included.
+    </aside>
+    {% endif %}
+
+    {% if audit.wcag_coverage %}
+    <h2>WCAG {{ audit.wcag_coverage.target_level }} coverage</h2>
+    <p class="muted" style="margin-top: -0.5rem;">
+        What this audit can verify automatically vs. what still needs a human pass.
+        An automated audit cannot prove conformance on its own — see the <em>Manual review</em>
+        bucket for the criteria this tool deliberately does not test.
+    </p>
+    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 0.5rem; margin: 0.5rem 0 1rem;">
+        <div style="padding: 0.5rem 0.75rem; border: 1px solid var(--border); border-radius: 6px;">
+            <div style="font-size: 1.5rem;"><strong>{{ audit.wcag_coverage.totals.automated }}</strong></div>
+            <div class="muted" style="font-size: 0.85rem;">automated</div>
+        </div>
+        <div style="padding: 0.5rem 0.75rem; border: 1px solid var(--border); border-radius: 6px;">
+            <div style="font-size: 1.5rem;"><strong>{{ audit.wcag_coverage.totals.ai_assisted }}</strong></div>
+            <div class="muted" style="font-size: 0.85rem;">AI-assisted (confirm)</div>
+        </div>
+        <div style="padding: 0.5rem 0.75rem; border: 1px solid var(--border); border-radius: 6px;">
+            <div style="font-size: 1.5rem;"><strong>{{ audit.wcag_coverage.totals.partial }}</strong></div>
+            <div class="muted" style="font-size: 0.85rem;">partial (auto + manual)</div>
+        </div>
+        <div style="padding: 0.5rem 0.75rem; border: 1px solid var(--border); border-radius: 6px;">
+            <div style="font-size: 1.5rem;"><strong>{{ audit.wcag_coverage.totals.manual_only }}</strong></div>
+            <div class="muted" style="font-size: 0.85rem;">manual review only</div>
+        </div>
+        <div style="padding: 0.5rem 0.75rem; border: 1px solid var(--border); border-radius: 6px;">
+            <div style="font-size: 1.5rem;"><strong>{{ audit.wcag_coverage.totals.in_scope }}</strong></div>
+            <div class="muted" style="font-size: 0.85rem;">total in scope</div>
+        </div>
+    </div>
+    {% if audit.wcag_coverage.totals.covered_pct is not none %}
+    <p class="muted" style="margin-top: -0.5rem;">
+        Blended SC coverage: <strong>~{{ audit.wcag_coverage.totals.covered_pct }}%</strong>
+        ({{ audit.wcag_coverage.totals.covered }} covered + {{ audit.wcag_coverage.totals.partial }} partial at half credit,
+        of {{ audit.wcag_coverage.totals.in_scope }}). This counts Success Criteria <em>tested</em>, not
+        barriers <em>caught</em>, and is never a conformance claim on its own.
+    </p>
+    {% endif %}
+    <details>
+        <summary><strong>Manual review only</strong> — {{ audit.wcag_coverage.manual_only|length }} criteria not testable by automation</summary>
+        <table>
+            <thead><tr><th>SC</th><th>Level</th><th>Name</th><th>Why manual</th></tr></thead>
+            <tbody>
+            {% for sc in audit.wcag_coverage.manual_only %}
+                <tr>
+                    <td><strong>{{ sc.sc }}</strong></td>
+                    <td>{{ sc.level }}</td>
+                    <td>{{ sc.name }}</td>
+                    <td class="muted">{{ sc.notes }}</td>
+                </tr>
+            {% endfor %}
+            </tbody>
+        </table>
+    </details>
+    <details>
+        <summary><strong>Partial coverage</strong> — {{ audit.wcag_coverage.partial|length }} criteria where automation catches some failure modes</summary>
+        <table>
+            <thead><tr><th>SC</th><th>Level</th><th>Name</th><th>Caveat</th></tr></thead>
+            <tbody>
+            {% for sc in audit.wcag_coverage.partial %}
+                <tr>
+                    <td><strong>{{ sc.sc }}</strong></td>
+                    <td>{{ sc.level }}</td>
+                    <td>{{ sc.name }}</td>
+                    <td class="muted">{{ sc.notes }}</td>
+                </tr>
+            {% endfor %}
+            </tbody>
+        </table>
+    </details>
+    <details>
+        <summary><strong>AI-assisted</strong> — {{ audit.wcag_coverage.ai_assisted|length }} criteria judged by a vision/LLM check (confirm before relying on)</summary>
+        <table>
+            <thead><tr><th>SC</th><th>Level</th><th>Name</th><th>How it's judged</th></tr></thead>
+            <tbody>
+            {% for sc in audit.wcag_coverage.ai_assisted %}
+                <tr>
+                    <td><strong>{{ sc.sc }}</strong></td>
+                    <td>{{ sc.level }}</td>
+                    <td>{{ sc.name }}</td>
+                    <td class="muted">{{ sc.notes }}</td>
+                </tr>
+            {% endfor %}
+            </tbody>
+        </table>
+    </details>
+    <details>
+        <summary><strong>Fully automated</strong> — {{ audit.wcag_coverage.automated|length }} criteria with high-confidence rule coverage</summary>
+        <table>
+            <thead><tr><th>SC</th><th>Level</th><th>Name</th><th>Coverage</th></tr></thead>
+            <tbody>
+            {% for sc in audit.wcag_coverage.automated %}
+                <tr>
+                    <td><strong>{{ sc.sc }}</strong></td>
+                    <td>{{ sc.level }}</td>
+                    <td>{{ sc.name }}</td>
+                    <td class="muted">{{ sc.notes }}</td>
+                </tr>
+            {% endfor %}
+            </tbody>
+        </table>
+    </details>
+    {% endif %}
+
+    {% if audit.cross_page_groups %}
+    <h2>Cross-page defects
+        <span class="muted" style="font-weight: normal;">({{ audit.cross_page_groups|length }} defect group{% if audit.cross_page_groups|length != 1 %}s{% endif %})</span>
+    </h2>
+    <p class="muted" style="margin-top: -0.5rem;">
+        Issues that appear on multiple pages — usually a design-system or template defect. One fix resolves every instance.
+    </p>
+    <table>
+        <thead><tr><th>Defect</th><th>Severity</th><th>Instances</th><th>Pages affected</th></tr></thead>
+        <tbody>
+            {% for g in audit.cross_page_groups[:20] %}
+            <tr>
+                <td>
+                    <strong>{{ g.title or g.rule }}</strong>
+                    <br><span class="rule muted">{{ g.rule }}</span>
+                </td>
+                <td><span class="severity {{ g.severity }}">{{ g.severity }}</span></td>
+                <td>{{ g.instance_count }}</td>
+                <td>{{ (g.pages_affected or [])|length }}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    {% endif %}
+
     {% if audit.nvda_status and audit.nvda_status != 'completed' %}
     <aside style="margin: 1rem 0; padding: 0.75rem 1rem; border: 1px solid var(--border); border-radius: 6px; background: rgba(0,76,153,0.04);">
         <strong>NVDA (Path B) status:</strong> {{ audit.nvda_status }}.
@@ -194,10 +388,14 @@
 
     <aside style="margin: 1.5rem 0; padding: 0.75rem 1rem; border: 1px dashed var(--border); border-radius: 6px;">
         <strong>Coverage note.</strong> Automated tooling catches roughly 30–40% of WCAG barriers.
-        This audit does not cover: JAWS or VoiceOver / TalkBack, multi-page authenticated flows
-        beyond what you explicitly requested, PDF documents, video caption quality, or the
-        subjective usefulness of alt text and link context. Real user testing with disabled
-        participants is the only way to find the remaining barriers.
+        This audit <em>does</em> include a real NVDA screen-reader pass (both focus-mode and
+        browse-mode) when a Windows worker is available, reflow testing at 320 CSS pixels,
+        and dynamic state probes when <code>interactions</code> are declared.
+        <br><br>
+        It <em>does not</em> cover: JAWS (commercial license required), VoiceOver / TalkBack
+        (no macOS/iOS/Android worker), PDF documents, video-caption quality, subjective
+        usefulness of alt text, or the cognitive-load dimension of copy. Real user testing
+        with disabled participants is the only way to find the remaining barriers.
     </aside>
 
     {% if audit.pages %}
@@ -217,14 +415,67 @@
     </table>
     {% endif %}
 
-    <h2>Issues <span class="muted" style="font-weight: normal;">({{ audit.issues|length }})</span></h2>
+    {#- Build a few derived views for better navigability -#}
+    {% set severity_rank = {'critical': 0, 'serious': 1, 'moderate': 2, 'minor': 3} %}
+    {% set sorted_issues = audit.issues|sort(attribute='severity', reverse=false) %}
+    {#- Top 10 blockers: level A critical/serious first, then AA. -#}
+    {% set top_blockers = [] %}
+    {% for i in audit.issues %}
+        {% if (i.level in ['A', 'AA']) and (i.severity in ['critical', 'serious']) %}
+            {% set _ = top_blockers.append(i) %}
+        {% endif %}
+    {% endfor %}
+
+    {% if top_blockers %}
+    <h2>Top blockers <span class="muted" style="font-weight: normal;">(Level A/AA, critical + serious)</span></h2>
+    <ol style="padding-left: 1.5rem;">
+        {% for issue in top_blockers[:10] %}
+        <li style="margin-bottom: 0.5rem;">
+            <span class="severity {{ issue.severity }}">{{ issue.severity }}</span>
+            {% if issue.level %}<span class="severity" style="background: rgba(0,76,153,0.12); color: var(--accent);">{{ issue.level }}</span>{% endif %}
+            <strong>{{ issue.title }}</strong>
+            <span class="rule">({{ issue.rule }})</span>
+            {% if issue.element and issue.element.selector %}
+            <br><code style="font-size: 0.85rem;">{{ issue.element.selector }}</code>
+            {% endif %}
+        </li>
+        {% endfor %}
+    </ol>
+    {% endif %}
+
+    {#- Group by WCAG success criterion for the full list. SCs sorted
+        numerically so 1.4.10 appears after 1.4.3 (not lexically). -#}
+    {% set groups_by_sc = {} %}
+    {% for issue in audit.issues %}
+        {% set sc = (issue.wcag_criteria or ['__none__'])[0] %}
+        {% if sc not in groups_by_sc %}{% set _ = groups_by_sc.update({sc: []}) %}{% endif %}
+        {% set _ = groups_by_sc[sc].append(issue) %}
+    {% endfor %}
+
+    <h2>Issues by WCAG criterion <span class="muted" style="font-weight: normal;">({{ audit.issues|length }} total)</span></h2>
     {% if not audit.issues %}
     <p class="muted">No issues reported.</p>
     {% endif %}
-    {% for issue in audit.issues %}
+    {% for sc in groups_by_sc.keys()|list|sort %}
+        {% set group = groups_by_sc[sc] %}
+        {% if sc != '__none__' %}
+        <h3 style="margin-top: 1.5rem; padding-top: 0.5rem; border-top: 1px solid var(--border);">
+            WCAG {{ sc }}
+            {% if group[0].level %}<span class="severity" style="background: rgba(0,76,153,0.12); color: var(--accent);">{{ group[0].level }}</span>{% endif %}
+            <span class="muted" style="font-weight: normal; font-size: 0.9rem;">({{ group|length }} issue{% if group|length != 1 %}s{% endif %})</span>
+        </h3>
+        {% else %}
+        <h3 style="margin-top: 1.5rem; padding-top: 0.5rem; border-top: 1px solid var(--border);">
+            Unmapped (no SC)
+            <span class="muted" style="font-weight: normal; font-size: 0.9rem;">({{ group|length }} issue{% if group|length != 1 %}s{% endif %})</span>
+        </h3>
+        {% endif %}
+    {% for issue in group %}
     <details{% if loop.first %} open{% endif %}>
         <summary>
             <span class="severity {{ issue.severity }}">{{ issue.severity }}</span>
+            {% if issue.level %}<span class="severity" style="background: rgba(0,76,153,0.12); color: var(--accent); margin-right: 0.5rem;">{{ issue.level }}</span>{% endif %}
+            {% if issue.viewport == 'mobile' %}<span class="severity" style="background: rgba(123,31,162,0.15); color: #7b1fa2; margin-right: 0.5rem;" title="Only visible at a mobile viewport">📱 mobile</span>{% endif %}
             <span>{{ issue.title }}</span>
             <span class="rule">{{ issue.rule }}</span>
         </summary>
@@ -232,7 +483,29 @@
         <dl>
             <dt>Module</dt><dd>{{ issue.module }}</dd>
             <dt>Principle</dt><dd>{{ issue.principle or '—' }}</dd>
-            <dt>WCAG</dt><dd>{{ (issue.wcag_criteria or [])|join(', ') or '—' }}</dd>
+            <dt>WCAG level</dt><dd>{{ issue.level or '—' }}</dd>
+            <dt>WCAG</dt>
+            <dd>
+                {% if issue.wcag_criteria %}
+                    {{ issue.wcag_criteria|join(', ') }}
+                    {% if issue.understanding_url %}
+                    &middot; <a href="{{ issue.understanding_url }}" rel="noopener">Understanding</a>
+                    {% endif %}
+                {% else %}—{% endif %}
+            </dd>
+            {% if issue.evidence and issue.evidence|length > 1 %}
+            <dt>Detected by</dt>
+            <dd>
+                <span class="severity" style="background: rgba(26,127,55,0.15); color: var(--pass);">{{ issue.evidence|length }} sources</span>
+                <span class="muted">{{ issue.evidence|join(', ') }}</span>
+            </dd>
+            {% endif %}
+            {% if issue.confidence and issue.confidence != 'high' %}
+            <dt>Confidence</dt><dd><em>{{ issue.confidence }}</em> — may need manual confirmation.</dd>
+            {% endif %}
+            {% if issue.details and issue.details.also_detected_by %}
+            <dt>Also detected by</dt><dd class="muted">{{ issue.details.also_detected_by|join(', ') }}</dd>
+            {% endif %}
             {% if issue.element and issue.element.selector %}
             <dt>Selector</dt><dd><code>{{ issue.element.selector }}</code></dd>
             {% endif %}
@@ -240,6 +513,16 @@
             <dt>Element</dt><dd><pre>{{ issue.element.html_snippet }}</pre></dd>
             {% endif %}
         </dl>
+        {# Only render screenshots that are inline data: URIs. Anything
+           else (http(s), file:, javascript:) would let a poisoned
+           audit result pull external content into the report. #}
+        {% if issue.details and issue.details.screenshot and issue.details.screenshot.startswith('data:image/') %}
+        <figure style="margin: 0.5rem 0;">
+            <img src="{{ issue.details.screenshot }}" alt="Screenshot highlighting the offending element"
+                 style="max-width: 100%; border: 1px solid var(--border); border-radius: 4px;">
+            <figcaption class="muted" style="font-size: 0.85rem; margin-top: 0.25rem;">Offending element outlined in red.</figcaption>
+        </figure>
+        {% endif %}
         {% if issue.fix_suggestion %}
         <p class="fix"><strong>Fix:</strong> {{ issue.fix_suggestion }}</p>
         {% endif %}
@@ -250,6 +533,7 @@
         </details>
         {% endif %}
     </details>
+    {% endfor %}
     {% endfor %}
 </body>
 </html>

@@ -1,0 +1,351 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>NVDA / audit stress test</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no">
+  <style>
+    :root { font: 14px system-ui; }
+    body { margin: 20px; max-width: 680px; }
+    section { border-top: 1px solid #ddd; padding: 12px 0; }
+    button, a { display: inline-block; margin: 4px 0; }
+    input, select { display: block; margin: 4px 0; }
+    .tiny { font-size: 7px; }
+    .required-star { color: red; }
+    .err { color: #c00; font-size: 12px; }
+    /* Infinite animation with no prefers-reduced-motion guard */
+    @keyframes rot { from { transform: rotate(0); } to { transform: rotate(360deg); } }
+    .spinner { width: 20px; height: 20px; border: 2px solid #333; border-top-color: transparent; border-radius: 50%; animation: rot 1s infinite linear; display: inline-block; }
+    /* Visual order reversed from DOM order */
+    .reorder { display: flex; flex-direction: row-reverse; gap: 10px; }
+    /* Tiny touch target */
+    .mini-btn { width: 18px; height: 18px; padding: 0; font-size: 10px; }
+  </style>
+</head>
+<body>
+  <h1>Automation-resistant issues stress test</h1>
+  <p>Every block is deliberately broken in a way most automated audits overlook.
+     Element titles describe the failure mode.</p>
+
+  <!-- ==========================================================
+       1. Icon buttons where visible text differs from accessible
+       name.  Automated a11y-tree analysis is happy (there IS a
+       name), but screen-reader users hear a different word than
+       speech-input users see on screen. WCAG 2.5.3.
+  =========================================================== -->
+  <section>
+    <h2>1. Visible text vs. accessible name</h2>
+    <!-- visible: hamburger icon.  NVDA says: "Menu" -->
+    <button aria-label="Main menu">&#9776;</button>
+    <!-- visible: X.  NVDA says: "Close dialog" -->
+    <button aria-label="Close dialog">&#10005;</button>
+    <!-- visible: arrow.  NVDA says: "Submit order" -->
+    <button aria-label="Submit order">&rarr;</button>
+    <!-- visible "Save" but aria-label overrides it entirely with
+         a completely different word. Speech-input user says "Save",
+         nothing happens. -->
+    <button aria-label="Confirm purchase and charge card">Save</button>
+  </section>
+
+  <!-- ==========================================================
+       2. Silent-by-design buttons.  The visible label is wrapped
+       in aria-hidden, so the a11y tree sees an empty button.
+  =========================================================== -->
+  <section>
+    <h2>2. Visible label hidden from screen readers</h2>
+    <button><span aria-hidden="true">Delete account</span></button>
+    <!-- another classic: emoji wrapped in a span, no fallback label -->
+    <button><span role="img">&#128465;</span></button>
+  </section>
+
+  <!-- ==========================================================
+       3. <div role=button> without keyboard handlers.  The element
+       is in the a11y tree with name+role, axe is satisfied.  But
+       Enter / Space won't fire onclick, so keyboard and SR users
+       are locked out of the control they were just told to press.
+  =========================================================== -->
+  <section>
+    <h2>3. Fake button (div role=button)</h2>
+    <div role="button" tabindex="0" onclick="alert('only fires on click')">
+      Save draft
+    </div>
+  </section>
+
+  <!-- ==========================================================
+       4. Link-text without context.  Screen-reader users navigate
+       by link list — "Read more" five times is useless without
+       surrounding prose.
+  =========================================================== -->
+  <section>
+    <h2>4. Non-descriptive link text</h2>
+    <p>About our new pricing. <a href="/pricing">Read more</a></p>
+    <p>About our new docs. <a href="/docs">Read more</a></p>
+    <p>About our careers. <a href="/careers">Click here</a></p>
+    <p>About our blog. <a href="/blog">Learn more</a></p>
+  </section>
+
+  <!-- ==========================================================
+       5. Placeholder used as the label.  No <label>, no aria-label.
+       Placeholder disappears the moment the user starts typing, so
+       zoom / cognitive / SR users lose the field identity.
+  =========================================================== -->
+  <section>
+    <h2>5. Placeholder-as-label</h2>
+    <input type="email" placeholder="Your email address">
+    <input type="tel"   placeholder="Phone">
+  </section>
+
+  <!-- ==========================================================
+       6. Error message that is NOT associated with the field.
+       aria-invalid=true is set, but there is no aria-describedby
+       pointing at the error text.  SR user hears "invalid" with no
+       explanation.
+  =========================================================== -->
+  <section>
+    <h2>6. Disassociated validation error</h2>
+    <label>Password <input type="password" aria-invalid="true" autocomplete="current-password"></label>
+    <p class="err">Password must be at least 10 characters.</p>
+  </section>
+
+  <!-- ==========================================================
+       7. Focusable element hidden from screen readers.
+       aria-hidden=true on a thing that can receive focus is an
+       SR/keyboard conflict: it DOES get focus, but SR skips it.
+  =========================================================== -->
+  <section>
+    <h2>7. aria-hidden on a focusable</h2>
+    <a href="#anchor" aria-hidden="true">Skip link (silent to SR)</a>
+  </section>
+
+  <!-- ==========================================================
+       8. Broken aria-labelledby / aria-describedby — they point at
+       IDs that do not exist on the page, so the SR gets nothing.
+  =========================================================== -->
+  <section>
+    <h2>8. Dangling ARIA references</h2>
+    <button aria-labelledby="no-such-id">Button with bad labelledby</button>
+    <input type="text" aria-describedby="also-missing">
+  </section>
+
+  <!-- ==========================================================
+       9. Radios without a fieldset/legend.  The group has no
+       announced name, so SR users hear four independent radios.
+  =========================================================== -->
+  <section>
+    <h2>9. Radio group without fieldset</h2>
+    <label><input type="radio" name="size" value="s"> Small</label>
+    <label><input type="radio" name="size" value="m"> Medium</label>
+    <label><input type="radio" name="size" value="l"> Large</label>
+  </section>
+
+  <!-- ==========================================================
+       10. Heading hierarchy jump (h2 → h4, skipping h3).
+  =========================================================== -->
+  <section>
+    <h2>10. Skipped heading level</h2>
+    <h4>Direct h4 under h2</h4>
+  </section>
+
+  <!-- ==========================================================
+       11. Data table with no header row.
+  =========================================================== -->
+  <section>
+    <h2>11. Data table without th</h2>
+    <table>
+      <tr><td>Name</td><td>Role</td><td>Start date</td></tr>
+      <tr><td>Ada</td><td>Engineer</td><td>2024-02-01</td></tr>
+      <tr><td>Linus</td><td>Manager</td><td>2024-04-15</td></tr>
+    </table>
+  </section>
+
+  <!-- ==========================================================
+       12. Image issues.  Two patterns automated tools often miss:
+       - alt="" on a non-decorative image (should have a real alt).
+         (our rules fire on positive signals instead, so this mostly
+         slips through — documenting the gap is the point.)
+       - alt="image of a puppy" is redundant noise.
+       - alt="IMG_2035.jpg" is placeholder text.
+  =========================================================== -->
+  <section>
+    <h2>12. Image alt problems</h2>
+    <img src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" alt="">
+    <img src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" alt="image of a puppy">
+    <img src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" alt="IMG_2035.jpg">
+    <img src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7">
+  </section>
+
+  <!-- ==========================================================
+       13. Visual reading order reversed from DOM order via
+       CSS flex-direction.  Sighted users see "Step 2  Step 1",
+       SR users hear "Step 1  Step 2".  Same DOM, different
+       experience — no automated tool can flag this with
+       confidence.
+  =========================================================== -->
+  <section>
+    <h2>13. Visual vs. DOM reading order</h2>
+    <div class="reorder">
+      <div>Step 1: Enter email</div>
+      <div>Step 2: Verify email</div>
+    </div>
+  </section>
+
+  <!-- ==========================================================
+       14. Color-only state.  "Required" is indicated solely by
+       a red asterisk colour.  SR users get nothing, colour-blind
+       users lose the signal.
+  =========================================================== -->
+  <section>
+    <h2>14. Required marker via colour only</h2>
+    <label>Full name <span class="required-star">*</span>
+      <input type="text" autocomplete="name">
+    </label>
+  </section>
+
+  <!-- ==========================================================
+       15. Infinite animation with no prefers-reduced-motion
+       guard; catches users with vestibular disorders.
+  =========================================================== -->
+  <section>
+    <h2>15. Infinite spinner, no reduced-motion check</h2>
+    <div class="spinner" aria-label="Loading"></div>
+  </section>
+
+  <!-- ==========================================================
+       16. Touch / click target way below 24x24px minimum.
+  =========================================================== -->
+  <section>
+    <h2>16. Sub-minimum touch target</h2>
+    <button class="mini-btn" aria-label="Increment">+</button>
+    <button class="mini-btn" aria-label="Decrement">-</button>
+  </section>
+
+  <!-- ==========================================================
+       17. Tiny text (below 10px is unreadable for low-vision).
+  =========================================================== -->
+  <section>
+    <h2>17. Tiny text</h2>
+    <p class="tiny">By continuing you agree to the absurdly long legal text nobody can read.</p>
+  </section>
+
+  <!-- ==========================================================
+       18. Invalid ARIA role — common typo.
+  =========================================================== -->
+  <section>
+    <h2>18. Typo'd role</h2>
+    <div role="buton" tabindex="0">I meant role=button</div>
+  </section>
+
+  <!-- ==========================================================
+       19. Email/password inputs missing autocomplete attributes.
+       Password managers + speech input lose their anchor.
+  =========================================================== -->
+  <section>
+    <h2>19. Missing autocomplete</h2>
+    <label>Email <input type="email"></label>
+    <label>Password <input type="password"></label>
+  </section>
+
+  <!-- ==========================================================
+       20. Tooltip-only label via title=.  NVDA announces it
+       inconsistently depending on user verbosity settings.
+  =========================================================== -->
+  <section>
+    <h2>20. Tooltip-only context</h2>
+    <button title="Permanently delete all your data">Danger</button>
+  </section>
+
+  <!-- ==========================================================
+       21. Browse-mode: visible text that SR skips.  The text here
+       is rendered via ::before pseudo-content, so it's visible but
+       NOT in the accessibility tree — classic SR-skip bug.
+  =========================================================== -->
+  <section>
+    <h2>21. Text rendered via CSS ::before (SR-skipped)</h2>
+    <style>
+      .ghost-text::before { content: "Legal notice you cannot hear"; }
+    </style>
+    <p class="ghost-text"></p>
+  </section>
+
+  <!-- ==========================================================
+       22. Dynamic state: accordion whose aria-expanded never
+       updates.  Our interaction DSL probes it.
+  =========================================================== -->
+  <section>
+    <h2>22. Broken accordion (dynamic-state probe)</h2>
+    <button id="broken-acc" aria-expanded="false">Toggle details</button>
+    <div id="broken-acc-panel" hidden>Hidden details content</div>
+    <script>
+      // Deliberately broken: flips visibility but NEVER updates
+      // aria-expanded on the trigger button. This is exactly the
+      // kind of state bug static analysis can't see.
+      document.getElementById('broken-acc').addEventListener('click', function() {
+        var p = document.getElementById('broken-acc-panel');
+        p.hidden = !p.hidden;
+      });
+    </script>
+  </section>
+
+  <!-- ==========================================================
+       23. Dynamic state: form submission with a status message
+       that is NOT in a live region.
+  =========================================================== -->
+  <section>
+    <h2>23. Status message without live region</h2>
+    <button id="save-btn">Save settings</button>
+    <div id="save-status"></div>
+    <script>
+      document.getElementById('save-btn').addEventListener('click', function() {
+        // "Saved" shows up visually but nobody announces it.
+        document.getElementById('save-status').textContent = 'Settings saved at ' + new Date().toLocaleTimeString();
+      });
+    </script>
+  </section>
+
+  <!-- ==========================================================
+       24. Reflow: an element that blows past 320 CSS pixels wide.
+  =========================================================== -->
+  <section>
+    <h2>24. Element wider than the 320px reflow minimum</h2>
+    <div style="width: 900px; height: 30px; background: #cfe;
+                display: inline-block;">
+      I am 900px wide and will never fit in a 320 CSS-pixel viewport.
+    </div>
+  </section>
+
+  <!-- ==========================================================
+       25. iframe without a title attribute.
+  =========================================================== -->
+  <section>
+    <h2>25. Untitled iframe</h2>
+    <iframe src="about:blank" width="300" height="80"></iframe>
+  </section>
+
+  <!-- ==========================================================
+       26. APG combobox missing aria-expanded and aria-controls.
+  =========================================================== -->
+  <section>
+    <h2>26. Broken combobox (missing aria-expanded / aria-controls)</h2>
+    <input role="combobox" type="text" aria-label="Country">
+  </section>
+
+  <!-- ==========================================================
+       27. Modal dialog without an accessible name / aria-modal.
+  =========================================================== -->
+  <section>
+    <h2>27. Anonymous dialog</h2>
+    <div role="dialog" id="dlg27">
+      <p>I'm a dialog, I have no heading, no aria-label.</p>
+      <button>OK</button>
+    </div>
+  </section>
+
+  <!-- ==========================================================
+       28. Disclosure button with invalid aria-expanded value.
+  =========================================================== -->
+  <section>
+    <h2>28. Disclosure with bad aria-expanded</h2>
+    <button aria-expanded="maybe">Show notes</button>
+  </section>
+</body>
+</html>

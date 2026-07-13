@@ -1,0 +1,19 @@
+notes: |
+  Ground truth: near-clean page. Most rules should NOT fire. We permit
+  structural rules (no <h1> position / heading hierarchy) to remain
+  silent. Any serious/critical finding from a core module on this
+  fixture is treated as a likely false positive.
+expected: []
+forbidden:
+  - rule: sr-silent-interactive
+  - rule: keyboard-no-accessible-name
+  - rule: forms-input-no-label
+  - rule: forms-missing-autocomplete
+  - rule: structure-html-lang
+  - rule: structure-title-missing
+  - rule: structure-no-main
+  - rule: structure-table-no-th
+  - rule: sr-label-in-name
+  - rule: aria-invalid-role
+  - rule: aria-labelledby-missing
+  - rule: aria-describedby-missing

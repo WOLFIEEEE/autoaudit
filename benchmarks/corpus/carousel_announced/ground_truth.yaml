@@ -1,0 +1,11 @@
+notes: |
+  An auto-advancing carousel WITH an aria-live region that updates on
+  each slide change. It still fails 2.2.1 (no pause control), but the
+  change IS announced — so carousel-change-not-announced must NOT fire.
+  Guards the 4.1.3 recipe against false positives.
+expected:
+  - rule: carousel-auto-advance
+    min_count: 1
+    max_count: 1
+forbidden:
+  - rule: carousel-change-not-announced

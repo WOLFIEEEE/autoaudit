@@ -9,6 +9,7 @@ from dataclasses import dataclass
 # Absolute project root so relative defaults keep working no matter where
 # the server / worker is launched from (tests change CWD).
 _PROJECT_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
+AXE_VERSION = "4.12.1"
 
 
 def _abs(path: str) -> str:
@@ -22,8 +23,10 @@ class Config:
     axe_script_path: str
     axe_cdn_url: str
     default_skip_nvda: bool
+    cache_enabled: bool
     cache_ttl_seconds: int
     max_audit_seconds: int
+    redis_required: bool
 
     @classmethod
     def from_env(cls) -> "Config":
@@ -33,13 +36,17 @@ class Config:
             axe_script_path=_abs(os.environ.get("AXE_SCRIPT_PATH", "vendor/axe.min.js")),
             axe_cdn_url=os.environ.get(
                 "AXE_CDN_URL",
-                "https://cdnjs.cloudflare.com/ajax/libs/axe-core/4.9.1/axe.min.js",
+                f"https://cdnjs.cloudflare.com/ajax/libs/axe-core/{AXE_VERSION}/axe.min.js",
             ),
             # NVDA only runs on Windows; default to skip everywhere else.
             default_skip_nvda=os.environ.get("SKIP_NVDA", "").lower() in ("1", "true", "yes")
             or platform.system() != "Windows",
+            cache_enabled=os.environ.get("CACHE_ENABLED", "true").lower()
+            not in ("0", "false", "no"),
             cache_ttl_seconds=int(os.environ.get("CACHE_TTL_SECONDS", "900")),
             max_audit_seconds=int(os.environ.get("MAX_AUDIT_SECONDS", "180")),
+            redis_required=os.environ.get("REDIS_REQUIRED", "false").lower()
+            in ("1", "true", "yes"),
         )
 
 

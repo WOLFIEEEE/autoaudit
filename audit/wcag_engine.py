@@ -3,9 +3,10 @@
 Injects axe-core into the loaded page and runs it. Normalizes the result
 into the project's common `issue` shape.
 
-axe-core is loaded from a bundled vendor/axe.min.js when present, otherwise
-from the configured CDN. Run scripts/fetch_axe.py to vendor it locally
-(recommended for production / air-gapped environments).
+axe-core is loaded from a bundled vendor/axe.min.js. Run
+scripts/fetch_axe.py to vendor the pinned, checksum-verified release.
+Runtime CDN injection is intentionally not used: it would execute an
+unverified third-party response inside every audited page.
 """
 
 from __future__ import annotations
@@ -16,7 +17,8 @@ import time
 from typing import Any
 
 from server.config import CONFIG
-from audit._wcag import principle_for
+from audit._fingerprint import issue_fingerprint
+from audit._wcag import blocking_level_for, principle_for, understanding_url
 
 log = logging.getLogger(__name__)
 
@@ -54,13 +56,14 @@ def _wcag_criteria_from_tags(tags: list[str]) -> list[str]:
 
 
 def _inject_axe(page) -> None:
-    """Inject axe-core into the page. Prefer local vendor, fall back to CDN."""
+    """Inject the checksum-verified, locally vendored axe-core script."""
     vendor_path = CONFIG.axe_script_path
     if os.path.exists(vendor_path):
         page.add_script_tag(path=vendor_path)
         return
-    log.info("axe vendor not found at %s; loading from CDN %s", vendor_path, CONFIG.axe_cdn_url)
-    page.add_script_tag(url=CONFIG.axe_cdn_url)
+    raise FileNotFoundError(
+        f"axe vendor not found at {vendor_path}; run python scripts/fetch_axe.py"
+    )
 
 
 def _normalize_violation(v: dict[str, Any]) -> list[dict[str, Any]]:
@@ -68,24 +71,47 @@ def _normalize_violation(v: dict[str, Any]) -> list[dict[str, Any]]:
     tags = v.get("tags", [])
     principle = _principle_from_tags(tags)
     wcag = _wcag_criteria_from_tags(tags)
+    level = blocking_level_for(wcag)
     severity = AXE_SEVERITY.get((v.get("impact") or "minor").lower(), "minor")
+    rule_id = v.get("id", "unknown")
+    # One Understanding URL per violation — primary SC is the lowest-
+    # numbered one axe emitted, which matches the primary-SC convention
+    # in audit/_issue.make_issue.
+    primary_sc = wcag[0] if wcag else None
+    u_url = understanding_url(primary_sc) if primary_sc else None
 
-    for idx, node in enumerate(v.get("nodes", [])):
+    for node in v.get("nodes", []):
         target = node.get("target") or []
         selector = target[0] if isinstance(target, list) and target else ""
+        html_snippet = node.get("html", "")
+        fp = issue_fingerprint(
+            rule=rule_id,
+            selector=selector,
+            html_snippet=html_snippet,
+            wcag_criteria=wcag,
+        )
+        # Stable ID: prefer the fingerprint over `axe-{rule}-{idx}` so
+        # two runs of the same audit produce the same id for the same
+        # finding, enabling the regression-diff script to work.
+        issue_id = f"axe-{rule_id}-{fp[:10]}"
         issues.append(
             {
-                "id": f"axe-{v.get('id', 'unknown')}-{idx}",
+                "id": issue_id,
+                "fingerprint": fp,
                 "module": "wcag_engine",
-                "rule": v.get("id", "unknown"),
+                "rule": rule_id,
                 "severity": severity,
                 "principle": principle,
+                "level": level,
+                "confidence": "high",
                 "wcag_criteria": wcag,
-                "title": v.get("help", v.get("id", "WCAG violation")),
+                "understanding_url": u_url,
+                "title": v.get("help", rule_id),
                 "description": node.get("failureSummary") or v.get("description", ""),
+                "evidence": ["axe"],
                 "element": {
                     "selector": selector,
-                    "html_snippet": node.get("html", ""),
+                    "html_snippet": html_snippet,
                 },
                 "details": {
                     "help_url": v.get("helpUrl", ""),

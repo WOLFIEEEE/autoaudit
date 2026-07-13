@@ -72,7 +72,12 @@ def run_audit_task(
         if result.get("nvda_status") == "pending":
             try:
                 run_nvda_task.apply_async(
-                    kwargs={"job_id": job_id, "url": url, "options": options},
+                    kwargs={
+                        "job_id": job_id,
+                        "url": url,
+                        "options": options,
+                        "cache_result": not bool(urls),
+                    },
                     # Expire the message after an hour. If no Windows
                     # worker is online, the NVDA pass is effectively
                     # skipped rather than queued indefinitely.
@@ -84,9 +89,9 @@ def run_audit_task(
                 # Not fatal — Path A result is already persisted.
                 result["nvda_status"] = "enqueue_failed"
                 database.save_job_result(job_id, result, _now())
-        else:
+        elif not urls:
             # No NVDA pending — the result is final.
-            cache.set_cached_result(url, result)
+            cache.set_cached_result(url, result, options)
 
         return result
 
@@ -102,7 +107,12 @@ def run_audit_task(
         return {"job_id": job_id, "status": "failed", "error": "timeout"}
     except Exception as exc:
         log.exception("audit %s failed", job_id)
-        database.update_job_status(job_id, "failed", _now(), error=str(exc))
+        database.update_job_status(
+            job_id,
+            "failed",
+            _now(),
+            error=f"audit failed ({type(exc).__name__})",
+        )
         raise
 
 
@@ -112,7 +122,13 @@ def run_audit_task(
     max_retries=0,
     acks_late=True,
 )
-def run_nvda_task(self, job_id: str, url: str, options: dict[str, Any]) -> dict[str, Any]:
+def run_nvda_task(
+    self,
+    job_id: str,
+    url: str,
+    options: dict[str, Any],
+    cache_result: bool = True,
+) -> dict[str, Any]:
     """Path B NVDA follow-up. Runs ONLY on a Windows worker (queue=nvda).
 
     Merges NVDA findings into the already-saved audit result and
@@ -143,7 +159,9 @@ def run_nvda_task(self, job_id: str, url: str, options: dict[str, Any]) -> dict[
         log.exception("NVDA task %s failed", job_id)
         existing["nvda_status"] = "failed"
         existing.setdefault("modules", {}).setdefault("screen_reader", {})
-        existing["modules"]["screen_reader"]["nvda_error"] = str(exc)
+        existing["modules"]["screen_reader"]["nvda_error"] = (
+            f"NVDA follow-up failed ({type(exc).__name__})"
+        )
         database.save_job_result(job_id, existing, _now())
         raise
 
@@ -174,7 +192,8 @@ def run_nvda_task(self, job_id: str, url: str, options: dict[str, Any]) -> dict[
 
     database.save_job_result(job_id, existing, _now())
     # Now that NVDA has landed, it's safe to cache.
-    cache.set_cached_result(url, existing)
+    if cache_result:
+        cache.set_cached_result(url, existing, options)
 
     log.info("NVDA follow-up for %s: %s", job_id, existing["nvda_status"])
     return {"job_id": job_id, "nvda_status": existing["nvda_status"]}

@@ -24,12 +24,24 @@ jobs:
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
-          pip install -r requirements.txt
+          pip install -r requirements-dev.txt
+
+      - name: Static checks
+        run: |
+          python -m compileall -q audit server scripts benchmarks main.py celery_app.py
+          ruff check audit server scripts tests benchmarks main.py celery_app.py
+          bandit -q -r audit server scripts -x tests -ll
+          python scripts/gen_rules_reference.py --check
+
+      - name: Audit Python dependencies
+        run: pip-audit -r requirements.txt
 
       - name: Run fast tests
         # "not slow" excludes the Playwright integration test, which runs
         # in the separate `e2e` job.
-        run: pytest -m "not slow" -q
+        run: |
+          coverage run --source=audit,server -m pytest -m "not slow" -q
+          coverage report --fail-under=50
 
   e2e:
     name: End-to-end (Playwright + axe-core)
@@ -46,7 +58,7 @@ jobs:
       - name: Install Python dependencies
         run: |
           python -m pip install --upgrade pip
-          pip install -r requirements.txt
+          pip install -r requirements-dev.txt
 
       - name: Install Chromium via Playwright
         run: playwright install --with-deps chromium

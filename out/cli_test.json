@@ -1,0 +1,2238 @@
+{
+  "url": "file:///C:/Users/kgpkh/autoaudit/scripts/nvda_stress_page.html",
+  "timestamp": "2026-04-22T04:05:03Z",
+  "duration_seconds": 5.65,
+  "summary": {
+    "score": 0,
+    "grade": "F",
+    "total_issues": 84,
+    "by_severity": {
+      "critical": 12,
+      "serious": 21,
+      "moderate": 46,
+      "minor": 5
+    },
+    "by_principle": {
+      "perceivable": {
+        "score": 47,
+        "issues": 18
+      },
+      "operable": {
+        "score": 10,
+        "issues": 41
+      },
+      "understandable": {
+        "score": 90,
+        "issues": 2
+      },
+      "robust": {
+        "score": 0,
+        "issues": 23
+      }
+    },
+    "by_level": {
+      "A": {
+        "issues": 30,
+        "blocks_conformance_at_this_level_or_above": true,
+        "by_severity": {
+          "critical": 6,
+          "serious": 13,
+          "moderate": 11,
+          "minor": 0
+        }
+      },
+      "AA": {
+        "issues": 40,
+        "blocks_conformance_at_this_level_or_above": true,
+        "by_severity": {
+          "critical": 0,
+          "serious": 2,
+          "moderate": 33,
+          "minor": 5
+        }
+      },
+      "AAA": {
+        "issues": 3,
+        "blocks_conformance_at_this_level_or_above": true,
+        "by_severity": {
+          "critical": 0,
+          "serious": 1,
+          "moderate": 2,
+          "minor": 0
+        }
+      },
+      "unmapped": {
+        "issues": 11
+      }
+    },
+    "conformance": {
+      "A_conformant": false,
+      "AA_conformant": false,
+      "AAA_conformant": false
+    }
+  },
+  "issues": [
+    {
+      "id": "axe-aria-required-attr-0",
+      "module": "wcag_engine",
+      "rule": "aria-required-attr",
+      "severity": "critical",
+      "principle": "robust",
+      "wcag_criteria": [
+        "4.1.2"
+      ],
+      "title": "Required ARIA attributes must be provided",
+      "description": "Fix any of the following:\n  Required ARIA attributes not present: aria-expanded, aria-controls",
+      "element": {
+        "selector": "input[role=\"combobox\"]",
+        "html_snippet": "<input role=\"combobox\" type=\"text\" aria-label=\"Country\">"
+      },
+      "details": {
+        "help_url": "https://dequeuniversity.com/rules/axe/4.9/aria-required-attr?application=axeAPI",
+        "axe_tags": [
+          "cat.aria",
+          "wcag2a",
+          "wcag412",
+          "EN-301-549",
+          "EN-9.4.1.2"
+        ],
+        "impact": "critical"
+      },
+      "fix_suggestion": "Fix any of the following:\n  Required ARIA attributes not present: aria-expanded, aria-controls"
+    },
+    {
+      "id": "axe-aria-roles-0",
+      "module": "wcag_engine",
+      "rule": "aria-roles",
+      "severity": "critical",
+      "principle": "robust",
+      "wcag_criteria": [
+        "4.1.2"
+      ],
+      "title": "ARIA roles used must conform to valid values",
+      "description": "Fix all of the following:\n  Role must be one of the valid ARIA roles: buton",
+      "element": {
+        "selector": "div[role=\"buton\"]",
+        "html_snippet": "<div role=\"buton\" tabindex=\"0\">I meant role=button</div>"
+      },
+      "details": {
+        "help_url": "https://dequeuniversity.com/rules/axe/4.9/aria-roles?application=axeAPI",
+        "axe_tags": [
+          "cat.aria",
+          "wcag2a",
+          "wcag412",
+          "EN-301-549",
+          "EN-9.4.1.2"
+        ],
+        "impact": "critical"
+      },
+      "fix_suggestion": "Fix all of the following:\n  Role must be one of the valid ARIA roles: buton"
+    },
+    {
+      "id": "axe-aria-valid-attr-value-0",
+      "module": "wcag_engine",
+      "rule": "aria-valid-attr-value",
+      "severity": "critical",
+      "principle": "robust",
+      "wcag_criteria": [
+        "4.1.2"
+      ],
+      "title": "ARIA attributes must conform to valid values",
+      "description": "Fix all of the following:\n  Invalid ARIA attribute value: aria-expanded=\"maybe\"",
+      "element": {
+        "selector": "section:nth-child(30) > button",
+        "html_snippet": "<button aria-expanded=\"maybe\">Show notes</button>"
+      },
+      "details": {
+        "help_url": "https://dequeuniversity.com/rules/axe/4.9/aria-valid-attr-value?application=axeAPI",
+        "axe_tags": [
+          "cat.aria",
+          "wcag2a",
+          "wcag412",
+          "EN-301-549",
+          "EN-9.4.1.2"
+        ],
+        "impact": "critical"
+      },
+      "fix_suggestion": "Fix all of the following:\n  Invalid ARIA attribute value: aria-expanded=\"maybe\""
+    },
+    {
+      "id": "axe-button-name-0",
+      "module": "wcag_engine",
+      "rule": "button-name",
+      "severity": "critical",
+      "principle": "robust",
+      "wcag_criteria": [
+        "4.1.2"
+      ],
+      "title": "Buttons must have discernible text",
+      "description": "Fix any of the following:\n  Element does not have inner text that is visible to screen readers\n  aria-label attribute does not exist or is empty\n  aria-labelledby attribute does not exist, references elements that do not exist or references elements that are empty\n  Element has no title attribute\n  Element's default semantics were not overridden with role=\"none\" or role=\"presentation\"",
+      "element": {
+        "selector": "section:nth-child(4) > button:nth-child(2)",
+        "html_snippet": "<button><span aria-hidden=\"true\">Delete account</span></button>"
+      },
+      "details": {
+        "help_url": "https://dequeuniversity.com/rules/axe/4.9/button-name?application=axeAPI",
+        "axe_tags": [
+          "cat.name-role-value",
+          "wcag2a",
+          "wcag412",
+          "section508",
+          "section508.22.a",
+          "TTv5",
+          "TT6.a",
+          "EN-301-549",
+          "EN-9.4.1.2",
+          "ACT"
+        ],
+        "impact": "critical"
+      },
+      "fix_suggestion": "Fix any of the following:\n  Element does not have inner text that is visible to screen readers\n  aria-label attribute does not exist or is empty\n  aria-labelledby attribute does not exist, references elements that do not exist or references elements that are empty\n  Element has no title attribute\n  Element's default semantics were not overridden with role=\"none\" or role=\"presentation\""
+    },
+    {
+      "id": "axe-image-alt-0",
+      "module": "wcag_engine",
+      "rule": "image-alt",
+      "severity": "critical",
+      "principle": "perceivable",
+      "wcag_criteria": [
+        "1.1.1"
+      ],
+      "title": "Images must have alternate text",
+      "description": "Fix any of the following:\n  Element does not have an alt attribute\n  aria-label attribute does not exist or is empty\n  aria-labelledby attribute does not exist, references elements that do not exist or references elements that are empty\n  Element has no title attribute\n  Element's default semantics were not overridden with role=\"none\" or role=\"presentation\"",
+      "element": {
+        "selector": "img:nth-child(5)",
+        "html_snippet": "<img src=\"data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7\">"
+      },
+      "details": {
+        "help_url": "https://dequeuniversity.com/rules/axe/4.9/image-alt?application=axeAPI",
+        "axe_tags": [
+          "cat.text-alternatives",
+          "wcag2a",
+          "wcag111",
+          "section508",
+          "section508.22.a",
+          "TTv5",
+          "TT7.a",
+          "TT7.b",
+          "EN-301-549",
+          "EN-9.1.1.1",
+          "ACT"
+        ],
+        "impact": "critical"
+      },
+      "fix_suggestion": "Fix any of the following:\n  Element does not have an alt attribute\n  aria-label attribute does not exist or is empty\n  aria-labelledby attribute does not exist, references elements that do not exist or references elements that are empty\n  Element has no title attribute\n  Element's default semantics were not overridden with role=\"none\" or role=\"presentation\""
+    },
+    {
+      "id": "axe-label-0",
+      "module": "wcag_engine",
+      "rule": "label",
+      "severity": "critical",
+      "principle": "robust",
+      "wcag_criteria": [
+        "4.1.2"
+      ],
+      "title": "Form elements must have labels",
+      "description": "Fix any of the following:\n  Form element does not have an implicit (wrapped) <label>\n  Form element does not have an explicit <label>\n  aria-label attribute does not exist or is empty\n  aria-labelledby attribute does not exist, references elements that do not exist or references elements that are empty\n  Element has no title attribute\n  Element has no placeholder attribute\n  Element's default semantics were not overridden with role=\"none\" or role=\"presentation\"",
+      "element": {
+        "selector": "input[aria-describedby=\"also-missing\"]",
+        "html_snippet": "<input type=\"text\" aria-describedby=\"also-missing\">"
+      },
+      "details": {
+        "help_url": "https://dequeuniversity.com/rules/axe/4.9/label?application=axeAPI",
+        "axe_tags": [
+          "cat.forms",
+          "wcag2a",
+          "wcag412",
+          "section508",
+          "section508.22.n",
+          "TTv5",
+          "TT5.c",
+          "EN-301-549",
+          "EN-9.4.1.2",
+          "ACT"
+        ],
+        "impact": "critical"
+      },
+      "fix_suggestion": "Fix any of the following:\n  Form element does not have an implicit (wrapped) <label>\n  Form element does not have an explicit <label>\n  aria-label attribute does not exist or is empty\n  aria-labelledby attribute does not exist, references elements that do not exist or references elements that are empty\n  Element has no title attribute\n  Element has no placeholder attribute\n  Element's default semantics were not overridden with role=\"none\" or role=\"presentation\""
+    },
+    {
+      "id": "media-img-no-alt-3",
+      "module": "media",
+      "rule": "media-img-no-alt",
+      "severity": "critical",
+      "principle": "perceivable",
+      "level": "A",
+      "wcag_criteria": [
+        "1.1.1"
+      ],
+      "title": "<img> missing alt attribute",
+      "description": "Images with no alt attribute are announced by screen readers as the raw file path or not at all.",
+      "element": {
+        "selector": "body > section:nth-of-type(12) > img:nth-of-type(4)",
+        "html_snippet": "<img src=\"data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7\">",
+        "text_content": ""
+      },
+      "details": {
+        "src": "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7"
+      },
+      "fix_suggestion": "Add alt=\"describe the image\" or alt=\"\" for purely decorative images."
+    },
+    {
+      "id": "keyboard-no-accessible-name-16",
+      "module": "keyboard",
+      "rule": "keyboard-no-accessible-name",
+      "severity": "critical",
+      "principle": "robust",
+      "level": "A",
+      "wcag_criteria": [
+        "4.1.2"
+      ],
+      "title": "Focusable element has no accessible name",
+      "description": "When this element receives keyboard focus, screen readers have nothing to announce. Users cannot identify what the control does.",
+      "element": {
+        "selector": "body > section:nth-of-type(8) > input",
+        "html_snippet": "<input type=\"text\" aria-describedby=\"also-missing\">",
+        "text_content": ""
+      },
+      "details": {
+        "tag": "input",
+        "role": "",
+        "tab_index": 17
+      },
+      "fix_suggestion": "Add visible text, aria-label, or a <label for> associating the control with a descriptive label."
+    },
+    {
+      "id": "keyboard-no-accessible-name-27",
+      "module": "keyboard",
+      "rule": "keyboard-no-accessible-name",
+      "severity": "critical",
+      "principle": "robust",
+      "level": "A",
+      "wcag_criteria": [
+        "4.1.2"
+      ],
+      "title": "Focusable element has no accessible name",
+      "description": "When this element receives keyboard focus, screen readers have nothing to announce. Users cannot identify what the control does.",
+      "element": {
+        "selector": "body > section:nth-of-type(25) > iframe",
+        "html_snippet": "<iframe src=\"about:blank\" width=\"300\" height=\"80\"></iframe>",
+        "text_content": ""
+      },
+      "details": {
+        "tag": "iframe",
+        "role": "",
+        "tab_index": 28
+      },
+      "fix_suggestion": "Add visible text, aria-label, or a <label for> associating the control with a descriptive label."
+    },
+    {
+      "id": "forms-input-no-label-3",
+      "module": "forms",
+      "rule": "forms-input-no-label",
+      "severity": "critical",
+      "principle": "understandable",
+      "level": "A",
+      "wcag_criteria": [
+        "3.3.2",
+        "4.1.2"
+      ],
+      "title": "<input> has no accessible label",
+      "description": "Screen-reader users hear only the field type (e.g. 'edit') with no indication of what data to enter.",
+      "element": {
+        "selector": "body > section:nth-of-type(8) > input",
+        "html_snippet": "<input type=\"text\" aria-describedby=\"also-missing\">",
+        "text_content": ""
+      },
+      "details": {
+        "tag": "input",
+        "type": "text",
+        "name": ""
+      },
+      "fix_suggestion": "Add a <label for=\"...\">Description</label> (preferred) or aria-label=\"Description\" on the field."
+    },
+    {
+      "id": "sr-silent-interactive-button",
+      "module": "screen_reader",
+      "rule": "sr-silent-interactive",
+      "severity": "critical",
+      "principle": "robust",
+      "level": "A",
+      "wcag_criteria": [
+        "4.1.2"
+      ],
+      "title": "<button> has no accessible name",
+      "description": "Chromium's accessibility tree exposes this element as a button but with no name. Screen readers will announce the role alone (e.g. 'button') with nothing to identify it.",
+      "element": {
+        "selector": "button",
+        "html_snippet": "",
+        "text_content": ""
+      },
+      "details": {
+        "role": "button",
+        "tree_name": ""
+      },
+      "fix_suggestion": "Add visible text, aria-label, aria-labelledby, or (for inputs) a <label for> association."
+    },
+    {
+      "id": "sr-silent-interactive-textbox",
+      "module": "screen_reader",
+      "rule": "sr-silent-interactive",
+      "severity": "critical",
+      "principle": "robust",
+      "level": "A",
+      "wcag_criteria": [
+        "4.1.2"
+      ],
+      "title": "<textbox> has no accessible name",
+      "description": "Chromium's accessibility tree exposes this element as a textbox but with no name. Screen readers will announce the role alone (e.g. 'button') with nothing to identify it.",
+      "element": {
+        "selector": "textbox",
+        "html_snippet": "",
+        "text_content": ""
+      },
+      "details": {
+        "role": "textbox",
+        "tree_name": ""
+      },
+      "fix_suggestion": "Add visible text, aria-label, aria-labelledby, or (for inputs) a <label for> association."
+    },
+    {
+      "id": "axe-aria-prohibited-attr-0",
+      "module": "wcag_engine",
+      "rule": "aria-prohibited-attr",
+      "severity": "serious",
+      "principle": "robust",
+      "wcag_criteria": [
+        "4.1.2"
+      ],
+      "title": "Elements must only use permitted ARIA attributes",
+      "description": "Fix all of the following:\n  aria-label attribute cannot be used on a div with no valid role attribute.",
+      "element": {
+        "selector": ".spinner",
+        "html_snippet": "<div class=\"spinner\" aria-label=\"Loading\"></div>"
+      },
+      "details": {
+        "help_url": "https://dequeuniversity.com/rules/axe/4.9/aria-prohibited-attr?application=axeAPI",
+        "axe_tags": [
+          "cat.aria",
+          "wcag2a",
+          "wcag412",
+          "EN-301-549",
+          "EN-9.4.1.2"
+        ],
+        "impact": "serious"
+      },
+      "fix_suggestion": "Fix all of the following:\n  aria-label attribute cannot be used on a div with no valid role attribute."
+    },
+    {
+      "id": "axe-frame-title-0",
+      "module": "wcag_engine",
+      "rule": "frame-title",
+      "severity": "serious",
+      "principle": "robust",
+      "wcag_criteria": [
+        "4.1.2"
+      ],
+      "title": "Frames must have an accessible name",
+      "description": "Fix any of the following:\n  Element has no title attribute\n  aria-label attribute does not exist or is empty\n  aria-labelledby attribute does not exist, references elements that do not exist or references elements that are empty\n  Element's default semantics were not overridden with role=\"none\" or role=\"presentation\"",
+      "element": {
+        "selector": "iframe",
+        "html_snippet": "<iframe src=\"about:blank\" width=\"300\" height=\"80\"></iframe>"
+      },
+      "details": {
+        "help_url": "https://dequeuniversity.com/rules/axe/4.9/frame-title?application=axeAPI",
+        "axe_tags": [
+          "cat.text-alternatives",
+          "wcag2a",
+          "wcag412",
+          "section508",
+          "section508.22.i",
+          "TTv5",
+          "TT12.d",
+          "EN-301-549",
+          "EN-9.4.1.2"
+        ],
+        "impact": "serious"
+      },
+      "fix_suggestion": "Fix any of the following:\n  Element has no title attribute\n  aria-label attribute does not exist or is empty\n  aria-labelledby attribute does not exist, references elements that do not exist or references elements that are empty\n  Element's default semantics were not overridden with role=\"none\" or role=\"presentation\""
+    },
+    {
+      "id": "axe-role-img-alt-0",
+      "module": "wcag_engine",
+      "rule": "role-img-alt",
+      "severity": "serious",
+      "principle": "perceivable",
+      "wcag_criteria": [
+        "1.1.1"
+      ],
+      "title": "[role=\"img\"] elements must have an alternative text",
+      "description": "Fix any of the following:\n  aria-label attribute does not exist or is empty\n  aria-labelledby attribute does not exist, references elements that do not exist or references elements that are empty\n  Element has no title attribute",
+      "element": {
+        "selector": "span[role=\"img\"]",
+        "html_snippet": "<span role=\"img\">\ud83d\uddd1</span>"
+      },
+      "details": {
+        "help_url": "https://dequeuniversity.com/rules/axe/4.9/role-img-alt?application=axeAPI",
+        "axe_tags": [
+          "cat.text-alternatives",
+          "wcag2a",
+          "wcag111",
+          "section508",
+          "section508.22.a",
+          "TTv5",
+          "TT7.a",
+          "EN-301-549",
+          "EN-9.1.1.1",
+          "ACT"
+        ],
+        "impact": "serious"
+      },
+      "fix_suggestion": "Fix any of the following:\n  aria-label attribute does not exist or is empty\n  aria-labelledby attribute does not exist, references elements that do not exist or references elements that are empty\n  Element has no title attribute"
+    },
+    {
+      "id": "axe-target-size-0",
+      "module": "wcag_engine",
+      "rule": "target-size",
+      "severity": "serious",
+      "principle": "operable",
+      "wcag_criteria": [
+        "2.5.8"
+      ],
+      "title": "All touch targets must be 24px large, or leave sufficient space",
+      "description": "Fix any of the following:\n  Target has insufficient size (18px by 18px, should be at least 24px by 24px)\n  Target has insufficient space to its closest neighbors. Safe clickable space has a diameter of 19.6px instead of at least 24px.",
+      "element": {
+        "selector": "button[aria-label=\"Increment\"]",
+        "html_snippet": "<button class=\"mini-btn\" aria-label=\"Increment\">+</button>"
+      },
+      "details": {
+        "help_url": "https://dequeuniversity.com/rules/axe/4.9/target-size?application=axeAPI",
+        "axe_tags": [
+          "cat.sensory-and-visual-cues",
+          "wcag22aa",
+          "wcag258"
+        ],
+        "impact": "serious"
+      },
+      "fix_suggestion": "Fix any of the following:\n  Target has insufficient size (18px by 18px, should be at least 24px by 24px)\n  Target has insufficient space to its closest neighbors. Safe clickable space has a diameter of 19.6px instead of at least 24px."
+    },
+    {
+      "id": "axe-target-size-1",
+      "module": "wcag_engine",
+      "rule": "target-size",
+      "severity": "serious",
+      "principle": "operable",
+      "wcag_criteria": [
+        "2.5.8"
+      ],
+      "title": "All touch targets must be 24px large, or leave sufficient space",
+      "description": "Fix any of the following:\n  Target has insufficient size (18px by 18px, should be at least 24px by 24px)\n  Target has insufficient space to its closest neighbors. Safe clickable space has a diameter of 19.6px instead of at least 24px.",
+      "element": {
+        "selector": "button[aria-label=\"Decrement\"]",
+        "html_snippet": "<button class=\"mini-btn\" aria-label=\"Decrement\">-</button>"
+      },
+      "details": {
+        "help_url": "https://dequeuniversity.com/rules/axe/4.9/target-size?application=axeAPI",
+        "axe_tags": [
+          "cat.sensory-and-visual-cues",
+          "wcag22aa",
+          "wcag258"
+        ],
+        "impact": "serious"
+      },
+      "fix_suggestion": "Fix any of the following:\n  Target has insufficient size (18px by 18px, should be at least 24px by 24px)\n  Target has insufficient space to its closest neighbors. Safe clickable space has a diameter of 19.6px instead of at least 24px."
+    },
+    {
+      "id": "structure-table-no-th-0",
+      "module": "structure",
+      "rule": "structure-table-no-th",
+      "severity": "serious",
+      "principle": "perceivable",
+      "level": "A",
+      "wcag_criteria": [
+        "1.3.1"
+      ],
+      "title": "Data table has no <th> headers",
+      "description": "Tables without <th> cells are announced as a flat grid, losing the row/column context screen readers need.",
+      "element": {
+        "selector": "body > section:nth-of-type(11) > table",
+        "html_snippet": "<table>\n      <tbody><tr><td>Name</td><td>Role</td><td>Start date</td></tr>\n      <tr><td>Ada</td><td>Engineer</td><td>2024-02-01</td></tr>\n      <tr><td>Linus</td><td>Manager</td><td>2024-04-15</td><",
+        "text_content": ""
+      },
+      "details": {},
+      "fix_suggestion": "Mark header cells with <th> and use scope='col' or scope='row'."
+    },
+    {
+      "id": "structure-iframe-no-title-0",
+      "module": "structure",
+      "rule": "structure-iframe-no-title",
+      "severity": "serious",
+      "principle": "robust",
+      "level": "A",
+      "wcag_criteria": [
+        "4.1.2"
+      ],
+      "title": "<iframe> has no title",
+      "description": "Screen-reader users navigate iframes by title (in the landmarks / frames list). An untitled iframe shows up as 'frame' with no indication of its content.",
+      "element": {
+        "selector": "body > section:nth-of-type(25) > iframe",
+        "html_snippet": "<iframe src=\"about:blank\" width=\"300\" height=\"80\"></iframe>",
+        "text_content": ""
+      },
+      "details": {
+        "src": "about:blank"
+      },
+      "fix_suggestion": "Add a title attribute that describes the iframe's contents, e.g. title=\"Payment processor\"."
+    },
+    {
+      "id": "aria-invalid-role-2",
+      "module": "aria",
+      "rule": "aria-invalid-role",
+      "severity": "serious",
+      "principle": "robust",
+      "level": "A",
+      "wcag_criteria": [
+        "4.1.2"
+      ],
+      "title": "Unknown ARIA role \"buton\"",
+      "description": "Assistive tech ignores unknown roles; the element's semantics fall back to its native tag, which may not match intent.",
+      "element": {
+        "selector": "body > section:nth-of-type(18) > div",
+        "html_snippet": "<div role=\"buton\" tabindex=\"0\">I meant role=button</div>",
+        "text_content": ""
+      },
+      "details": {
+        "role": "buton"
+      },
+      "fix_suggestion": "Use a valid ARIA 1.2 role, or remove the attribute to rely on native semantics."
+    },
+    {
+      "id": "aria-labelledby-missing-0",
+      "module": "aria",
+      "rule": "aria-labelledby-missing",
+      "severity": "serious",
+      "principle": "robust",
+      "level": "A",
+      "wcag_criteria": [
+        "4.1.2"
+      ],
+      "title": "aria-labelledby references an ID that doesn't exist",
+      "description": "If the referenced element is missing, the control has no accessible name.",
+      "element": {
+        "selector": "body > section:nth-of-type(8) > button",
+        "html_snippet": "<button aria-labelledby=\"no-such-id\">Button with bad labelledby</button>",
+        "text_content": ""
+      },
+      "details": {
+        "missing_ids": [
+          "no-such-id"
+        ]
+      },
+      "fix_suggestion": "Ensure each ID in aria-labelledby matches an existing element's id."
+    },
+    {
+      "id": "aria-hidden-focusable-0",
+      "module": "aria",
+      "rule": "aria-hidden-focusable",
+      "severity": "serious",
+      "principle": "robust",
+      "level": "A",
+      "wcag_criteria": [
+        "4.1.2"
+      ],
+      "title": "aria-hidden=\"true\" applied to a focusable element",
+      "description": "Hiding a focusable element from assistive tech while leaving it in the tab order traps keyboard users on an invisible control.",
+      "element": {
+        "selector": "body > section:nth-of-type(7) > a",
+        "html_snippet": "<a href=\"#anchor\" aria-hidden=\"true\">Skip link (silent to SR)</a>",
+        "text_content": ""
+      },
+      "details": {
+        "focusable_child": false
+      },
+      "fix_suggestion": "Remove aria-hidden, or remove the element from the tab order (tabindex=-1)."
+    },
+    {
+      "id": "responsive-viewport-zoom-disabled",
+      "module": "responsive",
+      "rule": "responsive-viewport-zoom-disabled",
+      "severity": "serious",
+      "principle": "perceivable",
+      "level": "AA",
+      "wcag_criteria": [
+        "1.4.4"
+      ],
+      "title": "Viewport meta disables user zoom",
+      "description": "Using user-scalable=no or maximum-scale below 2.0 prevents users with low vision from zooming text to a readable size.",
+      "element": {
+        "selector": "meta[name=\"viewport\"]",
+        "html_snippet": "",
+        "text_content": ""
+      },
+      "details": {
+        "content": "width=device-width, initial-scale=1, user-scalable=no"
+      },
+      "fix_suggestion": "Remove user-scalable=no and raise maximum-scale to at least 2.0 (or omit it)."
+    },
+    {
+      "id": "reflow-horizontal-scroll",
+      "module": "reflow",
+      "rule": "reflow-horizontal-scroll",
+      "severity": "serious",
+      "principle": "perceivable",
+      "level": "AA",
+      "wcag_criteria": [
+        "1.4.10"
+      ],
+      "title": "Page requires horizontal scrolling at 320px viewport",
+      "description": "At a 320 CSS-pixel viewport, the document is 920px wide, forcing users to scroll in two dimensions. Users with low vision at 400% zoom or mobile phones in portrait cannot read the content without constant horizontal scrolling.",
+      "element": {
+        "selector": "",
+        "html_snippet": "",
+        "text_content": ""
+      },
+      "details": {
+        "document_width_px": 920,
+        "viewport_width_px": 320
+      },
+      "fix_suggestion": "Use responsive CSS (max-width: 100%, flexbox, grid, media queries) so content wraps within the viewport. Common culprits: fixed-width tables, untargeted <pre>, wide images without max-width."
+    },
+    {
+      "id": "keyboard-generic-focusable-27",
+      "module": "keyboard",
+      "rule": "keyboard-generic-focusable",
+      "severity": "serious",
+      "principle": "robust",
+      "level": "A",
+      "wcag_criteria": [
+        "4.1.2"
+      ],
+      "title": "Focusable element has no semantic tag and no role attribute",
+      "description": "Screen readers can't tell users what kind of control this is. This is the classic <div onclick> / <span tabindex> anti-pattern.",
+      "element": {
+        "selector": "body > section:nth-of-type(25) > iframe",
+        "html_snippet": "<iframe src=\"about:blank\" width=\"300\" height=\"80\"></iframe>",
+        "text_content": ""
+      },
+      "details": {
+        "tag": "iframe",
+        "tab_index": 28
+      },
+      "fix_suggestion": "Use a semantic element (<button>, <a>), or add an appropriate role (role=\"button\") plus keyboard handlers."
+    },
+    {
+      "id": "forms-radio-group-no-fieldset-0",
+      "module": "forms",
+      "rule": "forms-radio-group-no-fieldset",
+      "severity": "serious",
+      "principle": "perceivable",
+      "level": "A",
+      "wcag_criteria": [
+        "1.3.1"
+      ],
+      "title": "radio group 'size' has no <fieldset><legend>",
+      "description": "Without a fieldset+legend (or role='radiogroup' with an accessible name), screen-reader users cannot tell that the individual options belong to the same question.",
+      "element": {
+        "selector": "body > section:nth-of-type(9) > label:nth-of-type(1) > input",
+        "html_snippet": "<input type=\"radio\" name=\"size\" value=\"s\">",
+        "text_content": ""
+      },
+      "details": {
+        "name": "size",
+        "type": "radio",
+        "option_count": 3
+      },
+      "fix_suggestion": "Wrap the options in <fieldset><legend>Question text</legend>...</fieldset>."
+    },
+    {
+      "id": "widget-combobox-missing-expanded-0",
+      "module": "widgets",
+      "rule": "widget-combobox-missing-expanded",
+      "severity": "serious",
+      "principle": "robust",
+      "level": "A",
+      "wcag_criteria": [
+        "4.1.2"
+      ],
+      "title": "Combobox is missing aria-expanded",
+      "description": "The APG combobox pattern requires aria-expanded to convey whether the popup is open. Screen-reader users hear 'combobox' but not 'expanded' or 'collapsed'.",
+      "element": {
+        "selector": "body > section:nth-of-type(26) > input",
+        "html_snippet": "<input role=\"combobox\" type=\"text\" aria-label=\"Country\">",
+        "text_content": ""
+      },
+      "details": {},
+      "fix_suggestion": "Set aria-expanded=\"false\" when closed and \"true\" when the popup is visible; update it synchronously with the UI state."
+    },
+    {
+      "id": "widget-combobox-missing-controls-0",
+      "module": "widgets",
+      "rule": "widget-combobox-missing-controls",
+      "severity": "serious",
+      "principle": "robust",
+      "level": "A",
+      "wcag_criteria": [
+        "4.1.2"
+      ],
+      "title": "Combobox is missing aria-controls",
+      "description": "A combobox should reference its popup listbox via aria-controls. Without the link, SR users can't find the list of options when they navigate by widget.",
+      "element": {
+        "selector": "body > section:nth-of-type(26) > input",
+        "html_snippet": "<input role=\"combobox\" type=\"text\" aria-label=\"Country\">",
+        "text_content": ""
+      },
+      "details": {},
+      "fix_suggestion": "Add aria-controls=\"<id-of-listbox>\" on the combobox element (WAI-ARIA 1.2 combobox pattern, not the deprecated 1.1 pattern)."
+    },
+    {
+      "id": "widget-dialog-missing-name-0",
+      "module": "widgets",
+      "rule": "widget-dialog-missing-name",
+      "severity": "serious",
+      "principle": "robust",
+      "level": "A",
+      "wcag_criteria": [
+        "4.1.2"
+      ],
+      "title": "Dialog is missing an accessible name",
+      "description": "When this dialog opens, SR users hear 'dialog' with no indication of purpose. APG requires every dialog to have a visible title referenced via aria-labelledby (or an aria-label).",
+      "element": {
+        "selector": "#dlg27",
+        "html_snippet": "<div role=\"dialog\" id=\"dlg27\">\n      <p>I'm a dialog, I have no heading, no aria-label.</p>\n      <button>OK</button>\n    </div>",
+        "text_content": ""
+      },
+      "details": {},
+      "fix_suggestion": "Give the dialog a visible heading with an id, and add aria-labelledby=\"<that-id>\" on the dialog element."
+    },
+    {
+      "id": "widget-disclosure-missing-expanded-1",
+      "module": "widgets",
+      "rule": "widget-disclosure-missing-expanded",
+      "severity": "serious",
+      "principle": "robust",
+      "level": "A",
+      "wcag_criteria": [
+        "4.1.2"
+      ],
+      "title": "Disclosure button has invalid aria-expanded",
+      "description": "aria-expanded='maybe' is not a valid value. Disclosure buttons must use 'true' or 'false'.",
+      "element": {
+        "selector": "body > section:nth-of-type(28) > button",
+        "html_snippet": "<button aria-expanded=\"maybe\">Show notes</button>",
+        "text_content": ""
+      },
+      "details": {},
+      "fix_suggestion": "Set aria-expanded=\"false\" when the content is collapsed and \"true\" when expanded; toggle synchronously with the visible state."
+    },
+    {
+      "id": "preferences-reduced-motion-ignored",
+      "module": "preferences",
+      "rule": "preferences-reduced-motion-ignored",
+      "severity": "serious",
+      "principle": "operable",
+      "level": "AAA",
+      "wcag_criteria": [
+        "2.3.3"
+      ],
+      "title": "1 element(s) keep animating under prefers-reduced-motion",
+      "description": "With `prefers-reduced-motion: reduce` emulated, the page still runs CSS animations. Users who requested reduced motion at the OS level will experience the full motion.",
+      "element": {
+        "selector": "div.spinner",
+        "html_snippet": "",
+        "text_content": ""
+      },
+      "details": {
+        "offenders": [
+          {
+            "tag": "div",
+            "id": "",
+            "cls": "spinner",
+            "animation": "rot",
+            "duration": "1s",
+            "iterations": "infinite"
+          }
+        ]
+      },
+      "fix_suggestion": "Gate animations behind `@media (prefers-reduced-motion: no-preference)`, or set `animation-duration: 0` inside a `@media (prefers-reduced-motion: reduce)` block."
+    },
+    {
+      "id": "sr-dialog-no-name-dialog",
+      "module": "screen_reader",
+      "rule": "sr-dialog-no-name",
+      "severity": "serious",
+      "principle": "robust",
+      "level": "A",
+      "wcag_criteria": [
+        "4.1.2"
+      ],
+      "title": "<dialog> has no accessible name",
+      "description": "When the dialog opens, screen readers announce 'dialog' with no indication of what it is for.",
+      "element": {
+        "selector": "dialog",
+        "html_snippet": "",
+        "text_content": ""
+      },
+      "details": {
+        "role": "dialog"
+      },
+      "fix_suggestion": "Add aria-label or aria-labelledby pointing to the dialog title."
+    },
+    {
+      "id": "sr-label-in-name-body > section:nth-of-type(1) > button:nth-of-type(4)",
+      "module": "screen_reader",
+      "rule": "sr-label-in-name",
+      "severity": "serious",
+      "principle": "operable",
+      "level": "A",
+      "wcag_criteria": [
+        "2.5.3"
+      ],
+      "title": "Accessible name does not contain the visible label",
+      "description": "The control displays 'Save' but its accessible name is 'Confirm purchase and charge card'. Speech-input users voicing the visible label cannot activate the control, and screen readers announce a name different from what sighted users see (WCAG 2.5.3 Label in Name, level A).",
+      "element": {
+        "selector": "body > section:nth-of-type(1) > button:nth-of-type(4)",
+        "html_snippet": "<button aria-label=\"Confirm purchase and charge card\">Save</button>",
+        "text_content": ""
+      },
+      "details": {
+        "visible_text": "Save",
+        "accessible_name": "Confirm purchase and charge card",
+        "tab_index": 4
+      },
+      "fix_suggestion": "Make the accessible name start with (or contain) the visible text verbatim. Typical cause: an aria-label that overrides the visible button text with different wording \u2014 use aria-labelledby pointing to the visible element, or remove the aria-label entirely."
+    },
+    {
+      "id": "structure-heading-skip-body > section:nth-of-type(10) > h4",
+      "module": "structure",
+      "rule": "structure-heading-skip",
+      "severity": "moderate",
+      "principle": "perceivable",
+      "level": "A",
+      "wcag_criteria": [
+        "1.3.1"
+      ],
+      "title": "Heading jumps from h2 to h4",
+      "description": "Skipping heading levels breaks the document outline that assistive tech relies on.",
+      "element": {
+        "selector": "body > section:nth-of-type(10) > h4",
+        "html_snippet": "<h4>Direct h4 under h2</h4>",
+        "text_content": "Direct h4 under h2"
+      },
+      "details": {
+        "from_level": 2,
+        "to_level": 4
+      },
+      "fix_suggestion": "Use h3 instead, or add an intermediate heading."
+    },
+    {
+      "id": "structure-no-main",
+      "module": "structure",
+      "rule": "structure-no-main",
+      "severity": "moderate",
+      "principle": "perceivable",
+      "level": "A",
+      "wcag_criteria": [
+        "1.3.1"
+      ],
+      "title": "No <main> landmark",
+      "description": "A <main> landmark lets screen-reader users skip directly to the primary content.",
+      "element": {
+        "selector": "",
+        "html_snippet": "",
+        "text_content": ""
+      },
+      "details": {},
+      "fix_suggestion": "Wrap the primary content in <main> or add role=\"main\"."
+    },
+    {
+      "id": "aria-describedby-missing-0",
+      "module": "aria",
+      "rule": "aria-describedby-missing",
+      "severity": "moderate",
+      "principle": "robust",
+      "level": "A",
+      "wcag_criteria": [
+        "4.1.2"
+      ],
+      "title": "aria-describedby references an ID that doesn't exist",
+      "description": "The accessible description will be empty.",
+      "element": {
+        "selector": "body > section:nth-of-type(8) > input",
+        "html_snippet": "<input type=\"text\" aria-describedby=\"also-missing\">",
+        "text_content": ""
+      },
+      "details": {
+        "missing_ids": [
+          "also-missing"
+        ]
+      },
+      "fix_suggestion": "Ensure each ID in aria-describedby matches an existing element's id."
+    },
+    {
+      "id": "media-img-placeholder-alt-2",
+      "module": "media",
+      "rule": "media-img-placeholder-alt",
+      "severity": "moderate",
+      "principle": "perceivable",
+      "level": "A",
+      "wcag_criteria": [
+        "1.1.1"
+      ],
+      "title": "Image alt text looks like a placeholder or filename",
+      "description": "Alt text such as 'image.jpg', 'IMG_1234', or 'photo' does not describe the image to screen-reader users.",
+      "element": {
+        "selector": "body > section:nth-of-type(12) > img:nth-of-type(3)",
+        "html_snippet": "<img src=\"data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7\" alt=\"IMG_2035.jpg\">",
+        "text_content": "IMG_2035.jpg"
+      },
+      "details": {
+        "alt": "IMG_2035.jpg",
+        "src": "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7"
+      },
+      "fix_suggestion": "Replace the alt with a short description of the image's purpose."
+    },
+    {
+      "id": "cognitive-generic-link-text-0",
+      "module": "cognitive",
+      "rule": "cognitive-generic-link-text",
+      "severity": "moderate",
+      "principle": "operable",
+      "level": "A",
+      "wcag_criteria": [
+        "2.4.4"
+      ],
+      "title": "Link text \"Read more\" is not descriptive",
+      "description": "Screen-reader users often navigate by scanning a list of links. Generic phrases like 'click here' lose all context in that view.",
+      "element": {
+        "selector": "body > section:nth-of-type(4) > p:nth-of-type(1) > a",
+        "html_snippet": "<a href=\"/pricing\">Read more</a>",
+        "text_content": "Read more"
+      },
+      "details": {
+        "href": "/pricing"
+      },
+      "fix_suggestion": "Rewrite the link text to describe the destination or action."
+    },
+    {
+      "id": "cognitive-generic-link-text-1",
+      "module": "cognitive",
+      "rule": "cognitive-generic-link-text",
+      "severity": "moderate",
+      "principle": "operable",
+      "level": "A",
+      "wcag_criteria": [
+        "2.4.4"
+      ],
+      "title": "Link text \"Read more\" is not descriptive",
+      "description": "Screen-reader users often navigate by scanning a list of links. Generic phrases like 'click here' lose all context in that view.",
+      "element": {
+        "selector": "body > section:nth-of-type(4) > p:nth-of-type(2) > a",
+        "html_snippet": "<a href=\"/docs\">Read more</a>",
+        "text_content": "Read more"
+      },
+      "details": {
+        "href": "/docs"
+      },
+      "fix_suggestion": "Rewrite the link text to describe the destination or action."
+    },
+    {
+      "id": "cognitive-generic-link-text-2",
+      "module": "cognitive",
+      "rule": "cognitive-generic-link-text",
+      "severity": "moderate",
+      "principle": "operable",
+      "level": "A",
+      "wcag_criteria": [
+        "2.4.4"
+      ],
+      "title": "Link text \"Click here\" is not descriptive",
+      "description": "Screen-reader users often navigate by scanning a list of links. Generic phrases like 'click here' lose all context in that view.",
+      "element": {
+        "selector": "body > section:nth-of-type(4) > p:nth-of-type(3) > a",
+        "html_snippet": "<a href=\"/careers\">Click here</a>",
+        "text_content": "Click here"
+      },
+      "details": {
+        "href": "/careers"
+      },
+      "fix_suggestion": "Rewrite the link text to describe the destination or action."
+    },
+    {
+      "id": "cognitive-generic-link-text-3",
+      "module": "cognitive",
+      "rule": "cognitive-generic-link-text",
+      "severity": "moderate",
+      "principle": "operable",
+      "level": "A",
+      "wcag_criteria": [
+        "2.4.4"
+      ],
+      "title": "Link text \"Learn more\" is not descriptive",
+      "description": "Screen-reader users often navigate by scanning a list of links. Generic phrases like 'click here' lose all context in that view.",
+      "element": {
+        "selector": "body > section:nth-of-type(4) > p:nth-of-type(4) > a",
+        "html_snippet": "<a href=\"/blog\">Learn more</a>",
+        "text_content": "Learn more"
+      },
+      "details": {
+        "href": "/blog"
+      },
+      "fix_suggestion": "Rewrite the link text to describe the destination or action."
+    },
+    {
+      "id": "visual-infinite-animation-0",
+      "module": "visual",
+      "rule": "visual-infinite-animation",
+      "severity": "moderate",
+      "principle": "operable",
+      "level": "A",
+      "wcag_criteria": [
+        "2.2.2"
+      ],
+      "title": "Element has infinite CSS animation (1.0s cycle)",
+      "description": "Auto-starting animations longer than 5 seconds must have a pause, stop, or hide control. Infinite animations always qualify.",
+      "element": {
+        "selector": "body > section:nth-of-type(15) > div",
+        "html_snippet": "<div class=\"spinner\" aria-label=\"Loading\"></div>",
+        "text_content": ""
+      },
+      "details": {
+        "animation_name": "rot",
+        "duration_s": 1.0,
+        "iteration_count": "infinite"
+      },
+      "fix_suggestion": "Provide a visible pause control, respect prefers-reduced-motion, or make the animation finite."
+    },
+    {
+      "id": "responsive-target-size-0",
+      "module": "responsive",
+      "rule": "responsive-target-size",
+      "severity": "moderate",
+      "principle": "operable",
+      "level": "AA",
+      "wcag_criteria": [
+        "2.5.8"
+      ],
+      "title": "Interactive target is only 28x23px (minimum 24x24)",
+      "description": "WCAG 2.2 AA requires interactive targets to be at least 24x24 CSS pixels so users with motor impairments can activate them reliably.",
+      "element": {
+        "selector": "body > section:nth-of-type(1) > button:nth-of-type(1)",
+        "html_snippet": "<button aria-label=\"Main menu\">\u2630</button>",
+        "text_content": ""
+      },
+      "details": {
+        "width": 28,
+        "height": 23,
+        "tag": "button",
+        "role": "",
+        "type": ""
+      },
+      "fix_suggestion": "Increase the target's padding or minimum size to at least 24x24px."
+    },
+    {
+      "id": "responsive-target-size-1",
+      "module": "responsive",
+      "rule": "responsive-target-size",
+      "severity": "moderate",
+      "principle": "operable",
+      "level": "AA",
+      "wcag_criteria": [
+        "2.5.8"
+      ],
+      "title": "Interactive target is only 27x23px (minimum 24x24)",
+      "description": "WCAG 2.2 AA requires interactive targets to be at least 24x24 CSS pixels so users with motor impairments can activate them reliably.",
+      "element": {
+        "selector": "body > section:nth-of-type(1) > button:nth-of-type(2)",
+        "html_snippet": "<button aria-label=\"Close dialog\">\u2715</button>",
+        "text_content": ""
+      },
+      "details": {
+        "width": 27,
+        "height": 23,
+        "tag": "button",
+        "role": "",
+        "type": ""
+      },
+      "fix_suggestion": "Increase the target's padding or minimum size to at least 24x24px."
+    },
+    {
+      "id": "responsive-target-size-2",
+      "module": "responsive",
+      "rule": "responsive-target-size",
+      "severity": "moderate",
+      "principle": "operable",
+      "level": "AA",
+      "wcag_criteria": [
+        "2.5.8"
+      ],
+      "title": "Interactive target is only 29x21px (minimum 24x24)",
+      "description": "WCAG 2.2 AA requires interactive targets to be at least 24x24 CSS pixels so users with motor impairments can activate them reliably.",
+      "element": {
+        "selector": "body > section:nth-of-type(1) > button:nth-of-type(3)",
+        "html_snippet": "<button aria-label=\"Submit order\">\u2192</button>",
+        "text_content": ""
+      },
+      "details": {
+        "width": 29,
+        "height": 21,
+        "tag": "button",
+        "role": "",
+        "type": ""
+      },
+      "fix_suggestion": "Increase the target's padding or minimum size to at least 24x24px."
+    },
+    {
+      "id": "responsive-target-size-3",
+      "module": "responsive",
+      "rule": "responsive-target-size",
+      "severity": "moderate",
+      "principle": "operable",
+      "level": "AA",
+      "wcag_criteria": [
+        "2.5.8"
+      ],
+      "title": "Interactive target is only 46x21px (minimum 24x24)",
+      "description": "WCAG 2.2 AA requires interactive targets to be at least 24x24 CSS pixels so users with motor impairments can activate them reliably.",
+      "element": {
+        "selector": "body > section:nth-of-type(1) > button:nth-of-type(4)",
+        "html_snippet": "<button aria-label=\"Confirm purchase and charge card\">Save</button>",
+        "text_content": ""
+      },
+      "details": {
+        "width": 46,
+        "height": 21,
+        "tag": "button",
+        "role": "",
+        "type": ""
+      },
+      "fix_suggestion": "Increase the target's padding or minimum size to at least 24x24px."
+    },
+    {
+      "id": "responsive-target-size-4",
+      "module": "responsive",
+      "rule": "responsive-target-size",
+      "severity": "moderate",
+      "principle": "operable",
+      "level": "AA",
+      "wcag_criteria": [
+        "2.5.8"
+      ],
+      "title": "Interactive target is only 105x21px (minimum 24x24)",
+      "description": "WCAG 2.2 AA requires interactive targets to be at least 24x24 CSS pixels so users with motor impairments can activate them reliably.",
+      "element": {
+        "selector": "body > section:nth-of-type(2) > button:nth-of-type(1)",
+        "html_snippet": "<button><span aria-hidden=\"true\">Delete account</span></button>",
+        "text_content": ""
+      },
+      "details": {
+        "width": 105,
+        "height": 21,
+        "tag": "button",
+        "role": "",
+        "type": ""
+      },
+      "fix_suggestion": "Increase the target's padding or minimum size to at least 24x24px."
+    },
+    {
+      "id": "responsive-target-size-5",
+      "module": "responsive",
+      "rule": "responsive-target-size",
+      "severity": "moderate",
+      "principle": "operable",
+      "level": "AA",
+      "wcag_criteria": [
+        "2.5.8"
+      ],
+      "title": "Interactive target is only 25x23px (minimum 24x24)",
+      "description": "WCAG 2.2 AA requires interactive targets to be at least 24x24 CSS pixels so users with motor impairments can activate them reliably.",
+      "element": {
+        "selector": "body > section:nth-of-type(2) > button:nth-of-type(2)",
+        "html_snippet": "<button><span role=\"img\">\ud83d\uddd1</span></button>",
+        "text_content": ""
+      },
+      "details": {
+        "width": 25,
+        "height": 23,
+        "tag": "button",
+        "role": "",
+        "type": ""
+      },
+      "fix_suggestion": "Increase the target's padding or minimum size to at least 24x24px."
+    },
+    {
+      "id": "responsive-target-size-6",
+      "module": "responsive",
+      "rule": "responsive-target-size",
+      "severity": "moderate",
+      "principle": "operable",
+      "level": "AA",
+      "wcag_criteria": [
+        "2.5.8"
+      ],
+      "title": "Interactive target is only 680x19px (minimum 24x24)",
+      "description": "WCAG 2.2 AA requires interactive targets to be at least 24x24 CSS pixels so users with motor impairments can activate them reliably.",
+      "element": {
+        "selector": "body > section:nth-of-type(3) > div",
+        "html_snippet": "<div role=\"button\" tabindex=\"0\" onclick=\"alert('only fires on click')\">\n      Save draft\n    </div>",
+        "text_content": ""
+      },
+      "details": {
+        "width": 680,
+        "height": 19,
+        "tag": "div",
+        "role": "button",
+        "type": ""
+      },
+      "fix_suggestion": "Increase the target's padding or minimum size to at least 24x24px."
+    },
+    {
+      "id": "responsive-target-size-7",
+      "module": "responsive",
+      "rule": "responsive-target-size",
+      "severity": "moderate",
+      "principle": "operable",
+      "level": "AA",
+      "wcag_criteria": [
+        "2.5.8"
+      ],
+      "title": "Interactive target is only 67x19px (minimum 24x24)",
+      "description": "WCAG 2.2 AA requires interactive targets to be at least 24x24 CSS pixels so users with motor impairments can activate them reliably.",
+      "element": {
+        "selector": "body > section:nth-of-type(4) > p:nth-of-type(1) > a",
+        "html_snippet": "<a href=\"/pricing\">Read more</a>",
+        "text_content": ""
+      },
+      "details": {
+        "width": 67,
+        "height": 19,
+        "tag": "a",
+        "role": "",
+        "type": ""
+      },
+      "fix_suggestion": "Increase the target's padding or minimum size to at least 24x24px."
+    },
+    {
+      "id": "responsive-target-size-8",
+      "module": "responsive",
+      "rule": "responsive-target-size",
+      "severity": "moderate",
+      "principle": "operable",
+      "level": "AA",
+      "wcag_criteria": [
+        "2.5.8"
+      ],
+      "title": "Interactive target is only 67x19px (minimum 24x24)",
+      "description": "WCAG 2.2 AA requires interactive targets to be at least 24x24 CSS pixels so users with motor impairments can activate them reliably.",
+      "element": {
+        "selector": "body > section:nth-of-type(4) > p:nth-of-type(2) > a",
+        "html_snippet": "<a href=\"/docs\">Read more</a>",
+        "text_content": ""
+      },
+      "details": {
+        "width": 67,
+        "height": 19,
+        "tag": "a",
+        "role": "",
+        "type": ""
+      },
+      "fix_suggestion": "Increase the target's padding or minimum size to at least 24x24px."
+    },
+    {
+      "id": "responsive-target-size-9",
+      "module": "responsive",
+      "rule": "responsive-target-size",
+      "severity": "moderate",
+      "principle": "operable",
+      "level": "AA",
+      "wcag_criteria": [
+        "2.5.8"
+      ],
+      "title": "Interactive target is only 60x19px (minimum 24x24)",
+      "description": "WCAG 2.2 AA requires interactive targets to be at least 24x24 CSS pixels so users with motor impairments can activate them reliably.",
+      "element": {
+        "selector": "body > section:nth-of-type(4) > p:nth-of-type(3) > a",
+        "html_snippet": "<a href=\"/careers\">Click here</a>",
+        "text_content": ""
+      },
+      "details": {
+        "width": 60,
+        "height": 19,
+        "tag": "a",
+        "role": "",
+        "type": ""
+      },
+      "fix_suggestion": "Increase the target's padding or minimum size to at least 24x24px."
+    },
+    {
+      "id": "responsive-target-size-10",
+      "module": "responsive",
+      "rule": "responsive-target-size",
+      "severity": "moderate",
+      "principle": "operable",
+      "level": "AA",
+      "wcag_criteria": [
+        "2.5.8"
+      ],
+      "title": "Interactive target is only 70x19px (minimum 24x24)",
+      "description": "WCAG 2.2 AA requires interactive targets to be at least 24x24 CSS pixels so users with motor impairments can activate them reliably.",
+      "element": {
+        "selector": "body > section:nth-of-type(4) > p:nth-of-type(4) > a",
+        "html_snippet": "<a href=\"/blog\">Learn more</a>",
+        "text_content": ""
+      },
+      "details": {
+        "width": 70,
+        "height": 19,
+        "tag": "a",
+        "role": "",
+        "type": ""
+      },
+      "fix_suggestion": "Increase the target's padding or minimum size to at least 24x24px."
+    },
+    {
+      "id": "responsive-target-size-11",
+      "module": "responsive",
+      "rule": "responsive-target-size",
+      "severity": "moderate",
+      "principle": "operable",
+      "level": "AA",
+      "wcag_criteria": [
+        "2.5.8"
+      ],
+      "title": "Interactive target is only 177x21px (minimum 24x24)",
+      "description": "WCAG 2.2 AA requires interactive targets to be at least 24x24 CSS pixels so users with motor impairments can activate them reliably.",
+      "element": {
+        "selector": "body > section:nth-of-type(5) > input:nth-of-type(1)",
+        "html_snippet": "<input type=\"email\" placeholder=\"Your email address\">",
+        "text_content": ""
+      },
+      "details": {
+        "width": 177,
+        "height": 21,
+        "tag": "input",
+        "role": "",
+        "type": "email"
+      },
+      "fix_suggestion": "Increase the target's padding or minimum size to at least 24x24px."
+    },
+    {
+      "id": "responsive-target-size-12",
+      "module": "responsive",
+      "rule": "responsive-target-size",
+      "severity": "moderate",
+      "principle": "operable",
+      "level": "AA",
+      "wcag_criteria": [
+        "2.5.8"
+      ],
+      "title": "Interactive target is only 177x21px (minimum 24x24)",
+      "description": "WCAG 2.2 AA requires interactive targets to be at least 24x24 CSS pixels so users with motor impairments can activate them reliably.",
+      "element": {
+        "selector": "body > section:nth-of-type(5) > input:nth-of-type(2)",
+        "html_snippet": "<input type=\"tel\" placeholder=\"Phone\">",
+        "text_content": ""
+      },
+      "details": {
+        "width": 177,
+        "height": 21,
+        "tag": "input",
+        "role": "",
+        "type": "tel"
+      },
+      "fix_suggestion": "Increase the target's padding or minimum size to at least 24x24px."
+    },
+    {
+      "id": "responsive-target-size-13",
+      "module": "responsive",
+      "rule": "responsive-target-size",
+      "severity": "moderate",
+      "principle": "operable",
+      "level": "AA",
+      "wcag_criteria": [
+        "2.5.8"
+      ],
+      "title": "Interactive target is only 177x21px (minimum 24x24)",
+      "description": "WCAG 2.2 AA requires interactive targets to be at least 24x24 CSS pixels so users with motor impairments can activate them reliably.",
+      "element": {
+        "selector": "body > section:nth-of-type(6) > label > input",
+        "html_snippet": "<input type=\"password\" aria-invalid=\"true\" autocomplete=\"current-password\">",
+        "text_content": ""
+      },
+      "details": {
+        "width": 177,
+        "height": 21,
+        "tag": "input",
+        "role": "",
+        "type": "password"
+      },
+      "fix_suggestion": "Increase the target's padding or minimum size to at least 24x24px."
+    },
+    {
+      "id": "responsive-target-size-14",
+      "module": "responsive",
+      "rule": "responsive-target-size",
+      "severity": "moderate",
+      "principle": "operable",
+      "level": "AA",
+      "wcag_criteria": [
+        "2.5.8"
+      ],
+      "title": "Interactive target is only 133x19px (minimum 24x24)",
+      "description": "WCAG 2.2 AA requires interactive targets to be at least 24x24 CSS pixels so users with motor impairments can activate them reliably.",
+      "element": {
+        "selector": "body > section:nth-of-type(7) > a",
+        "html_snippet": "<a href=\"#anchor\" aria-hidden=\"true\">Skip link (silent to SR)</a>",
+        "text_content": ""
+      },
+      "details": {
+        "width": 133,
+        "height": 19,
+        "tag": "a",
+        "role": "",
+        "type": ""
+      },
+      "fix_suggestion": "Increase the target's padding or minimum size to at least 24x24px."
+    },
+    {
+      "id": "responsive-target-size-15",
+      "module": "responsive",
+      "rule": "responsive-target-size",
+      "severity": "moderate",
+      "principle": "operable",
+      "level": "AA",
+      "wcag_criteria": [
+        "2.5.8"
+      ],
+      "title": "Interactive target is only 172x21px (minimum 24x24)",
+      "description": "WCAG 2.2 AA requires interactive targets to be at least 24x24 CSS pixels so users with motor impairments can activate them reliably.",
+      "element": {
+        "selector": "body > section:nth-of-type(8) > button",
+        "html_snippet": "<button aria-labelledby=\"no-such-id\">Button with bad labelledby</button>",
+        "text_content": ""
+      },
+      "details": {
+        "width": 172,
+        "height": 21,
+        "tag": "button",
+        "role": "",
+        "type": ""
+      },
+      "fix_suggestion": "Increase the target's padding or minimum size to at least 24x24px."
+    },
+    {
+      "id": "responsive-target-size-16",
+      "module": "responsive",
+      "rule": "responsive-target-size",
+      "severity": "moderate",
+      "principle": "operable",
+      "level": "AA",
+      "wcag_criteria": [
+        "2.5.8"
+      ],
+      "title": "Interactive target is only 177x21px (minimum 24x24)",
+      "description": "WCAG 2.2 AA requires interactive targets to be at least 24x24 CSS pixels so users with motor impairments can activate them reliably.",
+      "element": {
+        "selector": "body > section:nth-of-type(8) > input",
+        "html_snippet": "<input type=\"text\" aria-describedby=\"also-missing\">",
+        "text_content": ""
+      },
+      "details": {
+        "width": 177,
+        "height": 21,
+        "tag": "input",
+        "role": "",
+        "type": "text"
+      },
+      "fix_suggestion": "Increase the target's padding or minimum size to at least 24x24px."
+    },
+    {
+      "id": "responsive-target-size-17",
+      "module": "responsive",
+      "rule": "responsive-target-size",
+      "severity": "moderate",
+      "principle": "operable",
+      "level": "AA",
+      "wcag_criteria": [
+        "2.5.8"
+      ],
+      "title": "Interactive target is only 13x13px (minimum 24x24)",
+      "description": "WCAG 2.2 AA requires interactive targets to be at least 24x24 CSS pixels so users with motor impairments can activate them reliably.",
+      "element": {
+        "selector": "body > section:nth-of-type(9) > label:nth-of-type(1) > input",
+        "html_snippet": "<input type=\"radio\" name=\"size\" value=\"s\">",
+        "text_content": ""
+      },
+      "details": {
+        "width": 13,
+        "height": 13,
+        "tag": "input",
+        "role": "",
+        "type": "radio"
+      },
+      "fix_suggestion": "Increase the target's padding or minimum size to at least 24x24px."
+    },
+    {
+      "id": "responsive-target-size-18",
+      "module": "responsive",
+      "rule": "responsive-target-size",
+      "severity": "moderate",
+      "principle": "operable",
+      "level": "AA",
+      "wcag_criteria": [
+        "2.5.8"
+      ],
+      "title": "Interactive target is only 13x13px (minimum 24x24)",
+      "description": "WCAG 2.2 AA requires interactive targets to be at least 24x24 CSS pixels so users with motor impairments can activate them reliably.",
+      "element": {
+        "selector": "body > section:nth-of-type(9) > label:nth-of-type(2) > input",
+        "html_snippet": "<input type=\"radio\" name=\"size\" value=\"m\">",
+        "text_content": ""
+      },
+      "details": {
+        "width": 13,
+        "height": 13,
+        "tag": "input",
+        "role": "",
+        "type": "radio"
+      },
+      "fix_suggestion": "Increase the target's padding or minimum size to at least 24x24px."
+    },
+    {
+      "id": "responsive-target-size-19",
+      "module": "responsive",
+      "rule": "responsive-target-size",
+      "severity": "moderate",
+      "principle": "operable",
+      "level": "AA",
+      "wcag_criteria": [
+        "2.5.8"
+      ],
+      "title": "Interactive target is only 13x13px (minimum 24x24)",
+      "description": "WCAG 2.2 AA requires interactive targets to be at least 24x24 CSS pixels so users with motor impairments can activate them reliably.",
+      "element": {
+        "selector": "body > section:nth-of-type(9) > label:nth-of-type(3) > input",
+        "html_snippet": "<input type=\"radio\" name=\"size\" value=\"l\">",
+        "text_content": ""
+      },
+      "details": {
+        "width": 13,
+        "height": 13,
+        "tag": "input",
+        "role": "",
+        "type": "radio"
+      },
+      "fix_suggestion": "Increase the target's padding or minimum size to at least 24x24px."
+    },
+    {
+      "id": "responsive-target-size-20",
+      "module": "responsive",
+      "rule": "responsive-target-size",
+      "severity": "moderate",
+      "principle": "operable",
+      "level": "AA",
+      "wcag_criteria": [
+        "2.5.8"
+      ],
+      "title": "Interactive target is only 177x21px (minimum 24x24)",
+      "description": "WCAG 2.2 AA requires interactive targets to be at least 24x24 CSS pixels so users with motor impairments can activate them reliably.",
+      "element": {
+        "selector": "body > section:nth-of-type(14) > label > input",
+        "html_snippet": "<input type=\"text\" autocomplete=\"name\">",
+        "text_content": ""
+      },
+      "details": {
+        "width": 177,
+        "height": 21,
+        "tag": "input",
+        "role": "",
+        "type": "text"
+      },
+      "fix_suggestion": "Increase the target's padding or minimum size to at least 24x24px."
+    },
+    {
+      "id": "responsive-target-size-21",
+      "module": "responsive",
+      "rule": "responsive-target-size",
+      "severity": "moderate",
+      "principle": "operable",
+      "level": "AA",
+      "wcag_criteria": [
+        "2.5.8"
+      ],
+      "title": "Interactive target is only 18x18px (minimum 24x24)",
+      "description": "WCAG 2.2 AA requires interactive targets to be at least 24x24 CSS pixels so users with motor impairments can activate them reliably.",
+      "element": {
+        "selector": "body > section:nth-of-type(16) > button:nth-of-type(1)",
+        "html_snippet": "<button class=\"mini-btn\" aria-label=\"Increment\">+</button>",
+        "text_content": ""
+      },
+      "details": {
+        "width": 18,
+        "height": 18,
+        "tag": "button",
+        "role": "",
+        "type": ""
+      },
+      "fix_suggestion": "Increase the target's padding or minimum size to at least 24x24px."
+    },
+    {
+      "id": "responsive-target-size-22",
+      "module": "responsive",
+      "rule": "responsive-target-size",
+      "severity": "moderate",
+      "principle": "operable",
+      "level": "AA",
+      "wcag_criteria": [
+        "2.5.8"
+      ],
+      "title": "Interactive target is only 18x18px (minimum 24x24)",
+      "description": "WCAG 2.2 AA requires interactive targets to be at least 24x24 CSS pixels so users with motor impairments can activate them reliably.",
+      "element": {
+        "selector": "body > section:nth-of-type(16) > button:nth-of-type(2)",
+        "html_snippet": "<button class=\"mini-btn\" aria-label=\"Decrement\">-</button>",
+        "text_content": ""
+      },
+      "details": {
+        "width": 18,
+        "height": 18,
+        "tag": "button",
+        "role": "",
+        "type": ""
+      },
+      "fix_suggestion": "Increase the target's padding or minimum size to at least 24x24px."
+    },
+    {
+      "id": "responsive-target-size-23",
+      "module": "responsive",
+      "rule": "responsive-target-size",
+      "severity": "moderate",
+      "principle": "operable",
+      "level": "AA",
+      "wcag_criteria": [
+        "2.5.8"
+      ],
+      "title": "Interactive target is only 177x21px (minimum 24x24)",
+      "description": "WCAG 2.2 AA requires interactive targets to be at least 24x24 CSS pixels so users with motor impairments can activate them reliably.",
+      "element": {
+        "selector": "body > section:nth-of-type(19) > label:nth-of-type(1) > input",
+        "html_snippet": "<input type=\"email\">",
+        "text_content": ""
+      },
+      "details": {
+        "width": 177,
+        "height": 21,
+        "tag": "input",
+        "role": "",
+        "type": "email"
+      },
+      "fix_suggestion": "Increase the target's padding or minimum size to at least 24x24px."
+    },
+    {
+      "id": "responsive-target-size-24",
+      "module": "responsive",
+      "rule": "responsive-target-size",
+      "severity": "moderate",
+      "principle": "operable",
+      "level": "AA",
+      "wcag_criteria": [
+        "2.5.8"
+      ],
+      "title": "Interactive target is only 177x21px (minimum 24x24)",
+      "description": "WCAG 2.2 AA requires interactive targets to be at least 24x24 CSS pixels so users with motor impairments can activate them reliably.",
+      "element": {
+        "selector": "body > section:nth-of-type(19) > label:nth-of-type(2) > input",
+        "html_snippet": "<input type=\"password\">",
+        "text_content": ""
+      },
+      "details": {
+        "width": 177,
+        "height": 21,
+        "tag": "input",
+        "role": "",
+        "type": "password"
+      },
+      "fix_suggestion": "Increase the target's padding or minimum size to at least 24x24px."
+    },
+    {
+      "id": "responsive-target-size-25",
+      "module": "responsive",
+      "rule": "responsive-target-size",
+      "severity": "moderate",
+      "principle": "operable",
+      "level": "AA",
+      "wcag_criteria": [
+        "2.5.8"
+      ],
+      "title": "Interactive target is only 60x21px (minimum 24x24)",
+      "description": "WCAG 2.2 AA requires interactive targets to be at least 24x24 CSS pixels so users with motor impairments can activate them reliably.",
+      "element": {
+        "selector": "body > section:nth-of-type(20) > button",
+        "html_snippet": "<button title=\"Permanently delete all your data\">Danger</button>",
+        "text_content": ""
+      },
+      "details": {
+        "width": 60,
+        "height": 21,
+        "tag": "button",
+        "role": "",
+        "type": ""
+      },
+      "fix_suggestion": "Increase the target's padding or minimum size to at least 24x24px."
+    },
+    {
+      "id": "responsive-target-size-26",
+      "module": "responsive",
+      "rule": "responsive-target-size",
+      "severity": "moderate",
+      "principle": "operable",
+      "level": "AA",
+      "wcag_criteria": [
+        "2.5.8"
+      ],
+      "title": "Interactive target is only 98x21px (minimum 24x24)",
+      "description": "WCAG 2.2 AA requires interactive targets to be at least 24x24 CSS pixels so users with motor impairments can activate them reliably.",
+      "element": {
+        "selector": "#broken-acc",
+        "html_snippet": "<button id=\"broken-acc\" aria-expanded=\"false\">Toggle details</button>",
+        "text_content": ""
+      },
+      "details": {
+        "width": 98,
+        "height": 21,
+        "tag": "button",
+        "role": "",
+        "type": ""
+      },
+      "fix_suggestion": "Increase the target's padding or minimum size to at least 24x24px."
+    },
+    {
+      "id": "responsive-target-size-27",
+      "module": "responsive",
+      "rule": "responsive-target-size",
+      "severity": "moderate",
+      "principle": "operable",
+      "level": "AA",
+      "wcag_criteria": [
+        "2.5.8"
+      ],
+      "title": "Interactive target is only 96x21px (minimum 24x24)",
+      "description": "WCAG 2.2 AA requires interactive targets to be at least 24x24 CSS pixels so users with motor impairments can activate them reliably.",
+      "element": {
+        "selector": "#save-btn",
+        "html_snippet": "<button id=\"save-btn\">Save settings</button>",
+        "text_content": ""
+      },
+      "details": {
+        "width": 96,
+        "height": 21,
+        "tag": "button",
+        "role": "",
+        "type": ""
+      },
+      "fix_suggestion": "Increase the target's padding or minimum size to at least 24x24px."
+    },
+    {
+      "id": "responsive-target-size-28",
+      "module": "responsive",
+      "rule": "responsive-target-size",
+      "severity": "moderate",
+      "principle": "operable",
+      "level": "AA",
+      "wcag_criteria": [
+        "2.5.8"
+      ],
+      "title": "Interactive target is only 177x21px (minimum 24x24)",
+      "description": "WCAG 2.2 AA requires interactive targets to be at least 24x24 CSS pixels so users with motor impairments can activate them reliably.",
+      "element": {
+        "selector": "body > section:nth-of-type(26) > input",
+        "html_snippet": "<input role=\"combobox\" type=\"text\" aria-label=\"Country\">",
+        "text_content": ""
+      },
+      "details": {
+        "width": 177,
+        "height": 21,
+        "tag": "input",
+        "role": "combobox",
+        "type": "text"
+      },
+      "fix_suggestion": "Increase the target's padding or minimum size to at least 24x24px."
+    },
+    {
+      "id": "responsive-target-size-29",
+      "module": "responsive",
+      "rule": "responsive-target-size",
+      "severity": "moderate",
+      "principle": "operable",
+      "level": "AA",
+      "wcag_criteria": [
+        "2.5.8"
+      ],
+      "title": "Interactive target is only 35x21px (minimum 24x24)",
+      "description": "WCAG 2.2 AA requires interactive targets to be at least 24x24 CSS pixels so users with motor impairments can activate them reliably.",
+      "element": {
+        "selector": "body > section:nth-of-type(27) > div > button",
+        "html_snippet": "<button>OK</button>",
+        "text_content": ""
+      },
+      "details": {
+        "width": 35,
+        "height": 21,
+        "tag": "button",
+        "role": "",
+        "type": ""
+      },
+      "fix_suggestion": "Increase the target's padding or minimum size to at least 24x24px."
+    },
+    {
+      "id": "responsive-target-size-30",
+      "module": "responsive",
+      "rule": "responsive-target-size",
+      "severity": "moderate",
+      "principle": "operable",
+      "level": "AA",
+      "wcag_criteria": [
+        "2.5.8"
+      ],
+      "title": "Interactive target is only 86x21px (minimum 24x24)",
+      "description": "WCAG 2.2 AA requires interactive targets to be at least 24x24 CSS pixels so users with motor impairments can activate them reliably.",
+      "element": {
+        "selector": "body > section:nth-of-type(28) > button",
+        "html_snippet": "<button aria-expanded=\"maybe\">Show notes</button>",
+        "text_content": ""
+      },
+      "details": {
+        "width": 86,
+        "height": 21,
+        "tag": "button",
+        "role": "",
+        "type": ""
+      },
+      "fix_suggestion": "Increase the target's padding or minimum size to at least 24x24px."
+    },
+    {
+      "id": "reflow-element-exceeds-0",
+      "module": "reflow",
+      "rule": "reflow-element-exceeds",
+      "severity": "moderate",
+      "principle": "perceivable",
+      "level": "AA",
+      "wcag_criteria": [
+        "1.4.10"
+      ],
+      "title": "<div> extends past the 320px viewport",
+      "description": "This element's right edge sits at 920px, beyond the 320px reflow minimum. Contributes to the page-wide horizontal scrolling failure.",
+      "element": {
+        "selector": "body > section:nth-of-type(24) > div",
+        "html_snippet": "<div style=\"width: 900px; height: 30px; background: #cfe;\n                display: inline-block;\">\n      I am 900px wide and will never fit in a 320 CSS-pixel v",
+        "text_content": ""
+      },
+      "details": {
+        "right_px": 920,
+        "width_px": 900
+      },
+      "fix_suggestion": "Set max-width: 100% on images, allow tables to scroll inside a sized container, or stack layout on narrow viewports via a media query."
+    },
+    {
+      "id": "reflow-element-exceeds-1",
+      "module": "reflow",
+      "rule": "reflow-element-exceeds",
+      "severity": "moderate",
+      "principle": "perceivable",
+      "level": "AA",
+      "wcag_criteria": [
+        "1.4.10"
+      ],
+      "title": "<iframe> extends past the 320px viewport",
+      "description": "This element's right edge sits at 324px, beyond the 320px reflow minimum. Contributes to the page-wide horizontal scrolling failure.",
+      "element": {
+        "selector": "body > section:nth-of-type(25) > iframe",
+        "html_snippet": "<iframe src=\"about:blank\" width=\"300\" height=\"80\"></iframe>",
+        "text_content": ""
+      },
+      "details": {
+        "right_px": 324,
+        "width_px": 304
+      },
+      "fix_suggestion": "Set max-width: 100% on images, allow tables to scroll inside a sized container, or stack layout on narrow viewports via a media query."
+    },
+    {
+      "id": "forms-aria-invalid-no-description-2",
+      "module": "forms",
+      "rule": "forms-aria-invalid-no-description",
+      "severity": "moderate",
+      "principle": "understandable",
+      "level": "A",
+      "wcag_criteria": [
+        "3.3.1",
+        "3.3.3"
+      ],
+      "title": "Field marked aria-invalid but has no associated error description",
+      "description": "Screen readers announce the field as invalid but the user never hears what went wrong.",
+      "element": {
+        "selector": "body > section:nth-of-type(6) > label > input",
+        "html_snippet": "<input type=\"password\" aria-invalid=\"true\" autocomplete=\"current-password\">",
+        "text_content": ""
+      },
+      "details": {
+        "aria_describedby": ""
+      },
+      "fix_suggestion": "Point aria-describedby at an element containing the error text (e.g. a <span id='emailError'>Email is required</span>)."
+    },
+    {
+      "id": "widget-dialog-missing-aria-modal-0",
+      "module": "widgets",
+      "rule": "widget-dialog-missing-aria-modal",
+      "severity": "moderate",
+      "principle": "robust",
+      "level": "A",
+      "wcag_criteria": [
+        "4.1.2"
+      ],
+      "title": "Dialog is missing aria-modal",
+      "description": "Without aria-modal, screen readers may allow virtual-cursor navigation outside the dialog while it's open. For modal dialogs this creates a confusing reading context.",
+      "element": {
+        "selector": "#dlg27",
+        "html_snippet": "<div role=\"dialog\" id=\"dlg27\">\n      <p>I'm a dialog, I have no heading, no aria-label.</p>\n      <button>OK</button>\n    </div>",
+        "text_content": ""
+      },
+      "details": {},
+      "fix_suggestion": "Add aria-modal=\"true\" to modal dialogs. Combine with inert= on siblings (or aria-hidden) so AT cannot reach them."
+    },
+    {
+      "id": "preferences-no-reduced-motion-query",
+      "module": "preferences",
+      "rule": "preferences-no-reduced-motion-query",
+      "severity": "moderate",
+      "principle": "operable",
+      "level": "AAA",
+      "wcag_criteria": [
+        "2.3.3"
+      ],
+      "title": "No @media (prefers-reduced-motion) support detected",
+      "description": "The page's stylesheets contain no rules that adapt to the user's `prefers-reduced-motion` OS setting. Users with vestibular disorders who request reduced motion will still see every animation at full amplitude.",
+      "element": {
+        "selector": "stylesheet",
+        "html_snippet": "",
+        "text_content": ""
+      },
+      "details": {},
+      "fix_suggestion": "Add a stylesheet block:\n  @media (prefers-reduced-motion: reduce) {\n    *, *::before, *::after {\n      animation-duration: 0.01ms !important;\n      animation-iteration-count: 1 !important;\n      transition-duration: 0.01ms !important;\n    }\n  }"
+    },
+    {
+      "id": "preferences-no-forced-colors-query",
+      "module": "preferences",
+      "rule": "preferences-no-forced-colors-query",
+      "severity": "moderate",
+      "principle": "perceivable",
+      "level": "AAA",
+      "wcag_criteria": [
+        "1.4.8"
+      ],
+      "title": "No @media (forced-colors: active) support detected",
+      "description": "The page has no styles scoped to `forced-colors: active`. In Windows High Contrast mode (and macOS/iOS increased contrast) the browser overrides colors using system palette; author styles often lose semantic distinctions (e.g. disabled vs. active buttons become identical).",
+      "element": {
+        "selector": "stylesheet",
+        "html_snippet": "",
+        "text_content": ""
+      },
+      "details": {},
+      "fix_suggestion": "Test the page with Windows High Contrast or Chrome's `Emulate CSS media feature forced-colors` devtool. Add `@media (forced-colors: active)` rules that use system colors (`CanvasText`, `Highlight`, `ButtonText`, etc.) or `forced-color-adjust: none` where custom colors are semantically required."
+    },
+    {
+      "id": "visual-tiny-text-0",
+      "module": "visual",
+      "rule": "visual-tiny-text",
+      "severity": "minor",
+      "principle": "perceivable",
+      "level": "AA",
+      "wcag_criteria": [
+        "1.4.4"
+      ],
+      "title": "Text rendered at only 7.0px",
+      "description": "Text smaller than 9px is hard to read for users with low vision and often indicates a fixed pixel size that doesn't scale with browser zoom.",
+      "element": {
+        "selector": "body > section:nth-of-type(17) > p",
+        "html_snippet": "<p class=\"tiny\">By continuing you agree to the absurdly long legal text nobody can read.</p>",
+        "text_content": ""
+      },
+      "details": {
+        "font_size_px": 7.0,
+        "tag": "p"
+      },
+      "fix_suggestion": "Use at least 12px for body text, or a relative unit (rem/em/%) so it scales."
+    },
+    {
+      "id": "forms-missing-autocomplete-0",
+      "module": "forms",
+      "rule": "forms-missing-autocomplete",
+      "severity": "minor",
+      "principle": "perceivable",
+      "level": "AA",
+      "wcag_criteria": [
+        "1.3.5"
+      ],
+      "title": "<input type=email> appears to collect personal data without autocomplete",
+      "description": "WCAG 1.3.5 (AA) asks that fields collecting information about the user expose an appropriate autocomplete token so browsers and assistive tech can help.",
+      "element": {
+        "selector": "body > section:nth-of-type(5) > input:nth-of-type(1)",
+        "html_snippet": "<input type=\"email\" placeholder=\"Your email address\">",
+        "text_content": ""
+      },
+      "details": {
+        "type": "email",
+        "name": ""
+      },
+      "fix_suggestion": "Add an autocomplete token, e.g. autocomplete=\"email\" or \"tel\"."
+    },
+    {
+      "id": "forms-missing-autocomplete-1",
+      "module": "forms",
+      "rule": "forms-missing-autocomplete",
+      "severity": "minor",
+      "principle": "perceivable",
+      "level": "AA",
+      "wcag_criteria": [
+        "1.3.5"
+      ],
+      "title": "<input type=tel> appears to collect personal data without autocomplete",
+      "description": "WCAG 1.3.5 (AA) asks that fields collecting information about the user expose an appropriate autocomplete token so browsers and assistive tech can help.",
+      "element": {
+        "selector": "body > section:nth-of-type(5) > input:nth-of-type(2)",
+        "html_snippet": "<input type=\"tel\" placeholder=\"Phone\">",
+        "text_content": ""
+      },
+      "details": {
+        "type": "tel",
+        "name": ""
+      },
+      "fix_suggestion": "Add an autocomplete token, e.g. autocomplete=\"email\" or \"tel\"."
+    },
+    {
+      "id": "forms-missing-autocomplete-8",
+      "module": "forms",
+      "rule": "forms-missing-autocomplete",
+      "severity": "minor",
+      "principle": "perceivable",
+      "level": "AA",
+      "wcag_criteria": [
+        "1.3.5"
+      ],
+      "title": "<input type=email> appears to collect personal data without autocomplete",
+      "description": "WCAG 1.3.5 (AA) asks that fields collecting information about the user expose an appropriate autocomplete token so browsers and assistive tech can help.",
+      "element": {
+        "selector": "body > section:nth-of-type(19) > label:nth-of-type(1) > input",
+        "html_snippet": "<input type=\"email\">",
+        "text_content": ""
+      },
+      "details": {
+        "type": "email",
+        "name": ""
+      },
+      "fix_suggestion": "Add an autocomplete token, e.g. autocomplete=\"email\" or \"tel\"."
+    },
+    {
+      "id": "forms-missing-autocomplete-9",
+      "module": "forms",
+      "rule": "forms-missing-autocomplete",
+      "severity": "minor",
+      "principle": "perceivable",
+      "level": "AA",
+      "wcag_criteria": [
+        "1.3.5"
+      ],
+      "title": "<input type=password> appears to collect personal data without autocomplete",
+      "description": "WCAG 1.3.5 (AA) asks that fields collecting information about the user expose an appropriate autocomplete token so browsers and assistive tech can help.",
+      "element": {
+        "selector": "body > section:nth-of-type(19) > label:nth-of-type(2) > input",
+        "html_snippet": "<input type=\"password\">",
+        "text_content": ""
+      },
+      "details": {
+        "type": "password",
+        "name": ""
+      },
+      "fix_suggestion": "Add an autocomplete token, e.g. autocomplete=\"email\" or \"tel\"."
+    }
+  ],
+  "modules": {
+    "wcag_engine": {
+      "ran": true,
+      "issues_found": 12,
+      "duration_seconds": 1.23,
+      "error": null
+    },
+    "structure": {
+      "ran": true,
+      "issues_found": 4,
+      "duration_seconds": 0.007,
+      "error": null
+    },
+    "aria": {
+      "ran": true,
+      "issues_found": 4,
+      "duration_seconds": 0.005,
+      "error": null
+    },
+    "media": {
+      "ran": true,
+      "issues_found": 2,
+      "duration_seconds": 0.004,
+      "error": null
+    },
+    "cognitive": {
+      "ran": true,
+      "issues_found": 4,
+      "duration_seconds": 0.003,
+      "error": null
+    },
+    "visual": {
+      "ran": true,
+      "issues_found": 2,
+      "duration_seconds": 0.004,
+      "error": null
+    },
+    "responsive": {
+      "ran": true,
+      "issues_found": 32,
+      "duration_seconds": 0.007,
+      "error": null
+    },
+    "reflow": {
+      "ran": true,
+      "issues_found": 3,
+      "duration_seconds": 0.626,
+      "error": null
+    },
+    "keyboard": {
+      "ran": true,
+      "issues_found": 3,
+      "duration_seconds": 2.13,
+      "error": null
+    },
+    "forms": {
+      "ran": true,
+      "issues_found": 7,
+      "duration_seconds": 0.005,
+      "error": null
+    },
+    "widgets": {
+      "ran": true,
+      "issues_found": 5,
+      "duration_seconds": 0.004,
+      "error": null
+    },
+    "preferences": {
+      "ran": true,
+      "issues_found": 3,
+      "duration_seconds": 0.009,
+      "error": null
+    },
+    "screen_reader": {
+      "ran": true,
+      "issues_found": 5,
+      "duration_seconds": 0.033,
+      "error": null
+    }
+  },
+  "nvda_status": "skipped"
+}

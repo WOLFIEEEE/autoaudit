@@ -1,0 +1,13 @@
+notes: |
+  A <button></button> with no label. Should fire the classic "silent
+  interactive" and "keyboard no-accessible-name" pair. Used as a
+  minimum-baseline sanity check for the benchmark runner itself.
+expected:
+  - rule: sr-silent-interactive
+    min_count: 1
+  - rule: keyboard-no-accessible-name
+    min_count: 1
+forbidden:
+  # This fixture uses the default user-agent button focus ring, so a
+  # pixel-free focus-indicator false positive here would be a bug.
+  - rule: keyboard-no-focus-indicator

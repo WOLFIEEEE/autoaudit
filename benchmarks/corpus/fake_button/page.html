@@ -1,0 +1,33 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <title>Fake button fixture</title>
+  <style>
+    .btn { cursor: pointer; display: inline-block; padding: 8px 14px; }
+    .name { cursor: pointer; }
+  </style>
+</head>
+<body>
+<main>
+  <h1>Fake button</h1>
+
+  <!-- TRUE POSITIVE: div styled and named like a button, no role, not
+       focusable. Should fire fake-button-noninteractive exactly once. -->
+  <div class="btn" id="ctaPrimary">Start free trial</div>
+
+  <!-- TRUE POSITIVE 2: an <a> used as a control with NO href (barrier
+       #2 on the live page). Should fire fake-button-anchor-no-href. -->
+  <a class="btn" onclick="playDemo()">Watch demo</a>
+
+  <!-- FALSE-POSITIVE GUARD 1: a real link with a pointer-cursor span
+       inside. Neither the link nor the span may fire. -->
+  <a href="/home"><span class="name">Accessible.org</span></a>
+
+  <!-- FALSE-POSITIVE GUARD 2: a real button must never fire. -->
+  <button type="button">Real button</button>
+
+  <!-- FALSE-POSITIVE GUARD 3: a properly-authored div button (role +
+       tabindex) is out of this rule's scope. -->
+  <div role="button" tabindex="0">Proper ARIA button</div>
+</main>
+</body></html>

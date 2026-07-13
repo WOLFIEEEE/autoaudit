@@ -1,0 +1,23 @@
+notes: |
+  A <div class="btn" id="ctaPrimary"> styled and labelled like a button
+  but with no role and no tabindex — the classic div-as-button keyboard
+  failure (WCAG 2.1.1 / 4.1.2). Mirrors the live accessible.org
+  keyboard-practice page. Should fire exactly once.
+
+  The page also contains the three precision guards that previously
+  produced false positives: a pointer-cursor <span> inside a real <a>,
+  a native <button>, and a proper role=button + tabindex div. None of
+  those may fire the rule.
+expected:
+  - rule: fake-button-noninteractive
+    min_count: 1
+    max_count: 1
+  # The href-less <a class="btn" onclick> "Watch demo" control.
+  - rule: fake-button-anchor-no-href
+    min_count: 1
+    max_count: 1
+forbidden:
+  # The native button has a name and is focusable; the proper ARIA
+  # button is keyboard operable — neither should trip keyboard/SR rules
+  # in a way that the fixture would mistake for a fake-button failure.
+  - rule: sr-silent-interactive

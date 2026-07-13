@@ -55,6 +55,12 @@ if not _chromium_available():
     )
 
 
+@pytest.fixture(autouse=True)
+def _allow_local_fixture_server(monkeypatch):
+    """The E2E target is intentionally hosted on this process's loopback."""
+    monkeypatch.setenv("ALLOW_PRIVATE_TARGETS", "1")
+
+
 # --- Local HTTP server fixture ---------------------------------------------
 
 
@@ -135,11 +141,29 @@ def test_full_orchestrator_runs_every_module(sample_url):
         "visual",
         "preferences",
         "screen_reader",
+        "widgets",
+        "mobile",
+        "reflow",
+        "vlm",
     }
-    assert set(modules.keys()) == expected, modules.keys()
+    # Subset, not equality: adding a new module shouldn't break this
+    # contract test. The interesting invariant is "every module we
+    # have always shipped is still wired up" — surplus is fine.
+    missing = expected - set(modules.keys())
+    assert not missing, f"missing expected modules: {missing}"
 
-    # Every module should have ran=True (no exceptions).
+    # Every module should have ran=True (no exceptions), except for
+    # opt-in modules that explicitly skip by default. Each entry here
+    # documents *why* the module is opt-in:
+    #   - vlm: requires options["vlm_checks"] + an API key.
+    #   - error_flow: clicks submit buttons; opt-in via
+    #     options["error_flow_check"] because real targets have side
+    #     effects (account creation, charges).
+    OPT_IN_MODULES = {"vlm", "error_flow"}
     for name, m in modules.items():
+        if name in OPT_IN_MODULES:
+            assert m["ran"] is False, f"{name} should be opt-out by default: {m}"
+            continue
         assert m["ran"] is True, f"module {name} did not run: {m}"
 
 

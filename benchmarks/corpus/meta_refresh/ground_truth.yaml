@@ -1,0 +1,12 @@
+notes: |
+  A <meta http-equiv="refresh" content="600"> periodic reload. Should
+  fire the WCAG 2.2.1 timing rule exactly once. Long delay keeps the
+  page from reloading mid-audit while still being a real client-side
+  time limit the user cannot turn off.
+expected:
+  - rule: timing-meta-refresh
+    min_count: 1
+    max_count: 1
+forbidden:
+  # No redirect URL present, so the redirect variant must not fire.
+  - rule: timing-meta-refresh-redirect

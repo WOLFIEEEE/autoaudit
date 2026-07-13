@@ -1,0 +1,10 @@
+notes: |
+  A nav submenu revealed only by :hover (no :focus / :focus-within), so
+  its links are unreachable by keyboard (WCAG 2.1.1). The hover-only-menu
+  recipe runs during the default mobile pass (which actuates reveal): it
+  focuses the trigger, then hovers it, and compares submenu visibility.
+  Fires submenu-keyboard-inaccessible exactly once.
+expected:
+  - rule: submenu-keyboard-inaccessible
+    min_count: 1
+    max_count: 1

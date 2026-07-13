@@ -1,0 +1,123 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>NVDA rule-check fixture</title>
+  <style>
+    body { font: 14px system-ui; margin: 20px; max-width: 600px; }
+    button, a, input { margin: 4px 0; display: block; }
+    /* Deliberately kill focus outline on one control — exercises the
+       keyboard-no-focus-indicator rule. */
+    /* No outline, no box-shadow, no border — nothing visible on focus.
+       Buttons start with no border by default, so this really does
+       leave sighted keyboard users with zero focus feedback. */
+    .no-focus-ring { border: 0; }
+    .no-focus-ring:focus { outline: none; box-shadow: none; }
+  </style>
+</head>
+<body>
+  <h1>NVDA rule-check fixture</h1>
+  <p>Each element below is labelled with the rule ID it should trigger. The page is a self-describing test harness.</p>
+
+  <!-- =============================================================
+       sr-silent-interactive  (WCAG 4.1.2 / critical)
+       A button with no visible text and no aria-label => screen
+       readers say "button" with no label.
+  ============================================================== -->
+  <section aria-label="silent interactive">
+    <h2>1. Silent interactive</h2>
+    <!-- expect: sr-silent-interactive, keyboard-no-accessible-name -->
+    <button id="silent-btn"></button>
+    <button id="silent-btn-icon" aria-label=""><span aria-hidden="true">&#x2715;</span></button>
+  </section>
+
+  <!-- =============================================================
+       sr-empty-heading  (WCAG 1.3.1 / serious)
+       A heading with no text shows up as a blank entry in the
+       screen-reader heading list.
+  ============================================================== -->
+  <section aria-label="empty heading">
+    <h2>2. Empty heading below</h2>
+    <!-- expect: sr-empty-heading -->
+    <h3 id="empty-heading"></h3>
+    <p>There should be an empty h3 above.</p>
+  </section>
+
+  <!-- =============================================================
+       sr-duplicate-landmark  (WCAG 1.3.1 / moderate)
+       Two <nav> landmarks with no aria-label are indistinguishable
+       in NVDA's landmarks list.
+  ============================================================== -->
+  <nav>
+    <a href="#first-nav-link">First nav link</a>
+  </nav>
+  <nav>
+    <a href="#second-nav-link">Second nav link</a>
+  </nav>
+
+  <!-- =============================================================
+       sr-dialog-no-name  (WCAG 4.1.2 / serious)
+       role=dialog with no accessible name.
+  ============================================================== -->
+  <section aria-label="dialog with no name">
+    <h2>3. Unnamed dialog</h2>
+    <!-- expect: sr-dialog-no-name -->
+    <div role="dialog" id="unnamed-dialog">
+      <p>This dialog has no accessible name.</p>
+      <button>Close me</button>
+    </div>
+  </section>
+
+  <!-- =============================================================
+       keyboard-generic-focusable  (WCAG 4.1.2 / serious)
+       <div tabindex=0> with no role and no semantic tag.
+  ============================================================== -->
+  <section aria-label="generic focusable">
+    <h2>4. Generic focusable div</h2>
+    <!-- expect: keyboard-generic-focusable -->
+    <div tabindex="0">Click me, I am a "button" but without a role</div>
+  </section>
+
+  <!-- =============================================================
+       keyboard-positive-tabindex  (WCAG 2.4.3 / moderate)
+       tabindex > 0 disrupts natural tab order.
+  ============================================================== -->
+  <section aria-label="positive tabindex">
+    <h2>5. Positive tabindex link</h2>
+    <!-- expect: keyboard-positive-tabindex -->
+    <a href="#x" tabindex="3">Link with tabindex=3</a>
+  </section>
+
+  <!-- =============================================================
+       keyboard-no-focus-indicator  (WCAG 2.4.7 / serious)
+       outline:none and no replacement style.
+  ============================================================== -->
+  <section aria-label="no focus ring">
+    <h2>6. No focus ring</h2>
+    <!-- expect: keyboard-no-focus-indicator -->
+    <button class="no-focus-ring">Button with no visible focus style</button>
+  </section>
+
+  <!-- =============================================================
+       sr-nvda-mismatch  (Path B only — WCAG 2.5.3 / moderate)
+       Visible text is an arrow; aria-label is "Submit order". NVDA
+       announces "Submit order" but speech-input users trying to say
+       the visible label ("arrow" or similar) cannot activate it.
+  ============================================================== -->
+  <section aria-label="mismatched label">
+    <h2>7. Icon button with mismatched label</h2>
+    <!-- expect (Path B): sr-nvda-mismatch -->
+    <button aria-label="Submit order">&rarr;</button>
+  </section>
+
+  <!-- =============================================================
+       A few well-formed controls so the parser can align stops
+       against speech for the non-broken tail of the tab walk.
+  ============================================================== -->
+  <section aria-label="good controls">
+    <h2>8. Good controls (baseline)</h2>
+    <label>Email <input type="email" id="email-input"></label>
+    <button>Subscribe</button>
+  </section>
+</body>
+</html>

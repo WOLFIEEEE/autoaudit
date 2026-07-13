@@ -51,6 +51,42 @@ def test_multiple_h1():
     assert "structure-no-h1" not in rules
 
 
+def test_duplicate_heading_text_detected():
+    # WCAG 2.4.6 — two headings with identical text (case/space
+    # insensitive). The second occurrence fires; the first does not.
+    dom = {
+        "lang": "en",
+        "title": "x",
+        "headings": [
+            {"level": 1, "text": "Overview", "selector": "h1", "html": "<h1>Overview</h1>"},
+            {"level": 2, "text": "Details", "selector": "h2", "html": "<h2>Details</h2>"},
+            {"level": 2, "text": "overview", "selector": "h2:nth-of-type(2)", "html": "<h2>overview</h2>"},
+        ],
+        "landmarks": {"main": 1},
+        "tables": [],
+    }
+    issues = analyze(dom)
+    dups = [i for i in issues if i["rule"] == "structure-duplicate-heading"]
+    assert len(dups) == 1
+    assert dups[0]["wcag_criteria"] == ["2.4.6"]
+    assert dups[0]["confidence"] == "low"
+    assert dups[0]["element"]["selector"] == "h2:nth-of-type(2)"
+
+
+def test_unique_headings_no_duplicate_finding():
+    dom = {
+        "lang": "en",
+        "title": "x",
+        "headings": [
+            {"level": 1, "text": "Home", "selector": "h1", "html": "<h1>Home</h1>"},
+            {"level": 2, "text": "About", "selector": "h2", "html": "<h2>About</h2>"},
+        ],
+        "landmarks": {"main": 1},
+        "tables": [],
+    }
+    assert not [i for i in analyze(dom) if i["rule"] == "structure-duplicate-heading"]
+
+
 def test_heading_skip_detected():
     dom = {
         "lang": "en",

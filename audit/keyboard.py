@@ -29,12 +29,54 @@ log = logging.getLogger(__name__)
 
 _FOCUS_PROBE_JS = r"""
 () => {
+    // Selector builder preferring stable hooks over :nth-of-type chains.
+    // Priority order (highest first):
+    //   1. #id (when id is stable — not a CSS-in-JS hash)
+    //   2. [data-testid=...] or [data-test=...] or [data-cy=...]
+    //   3. [name=...] (for form controls)
+    //   4. tag + :nth-of-type as a last resort
+    // nth-of-type chains break on every DOM shuffle; test-ids don't.
+    function isHashyId(id) {
+        // Styled-components / emotion / CSS-modules IDs look like
+        // "css-1q0lrm2" or "abc_123_def". Heuristic: rule out any id
+        // that's mostly lowercase hex + dashes/underscores, or starts
+        // with a prefix known to be auto-generated.
+        if (!id) return true;
+        if (/^(?:css|mui|chakra|sc|emotion|styled)-/i.test(id)) return true;
+        if (/^[0-9a-f_-]{10,}$/i.test(id)) return true;
+        return false;
+    }
+    function stableSelector(el) {
+        if (!el || el.nodeType !== 1) return '';
+        // Prefer test-id attributes — teams add these exactly so
+        // automation can find elements reliably.
+        for (const attr of ['data-testid', 'data-test', 'data-cy', 'data-qa']) {
+            const v = el.getAttribute(attr);
+            if (v) return `[${attr}="${CSS.escape(v)}"]`;
+        }
+        if (el.id && !isHashyId(el.id)) return '#' + CSS.escape(el.id);
+        // For form controls, name= is usually stable (server contract).
+        if (['INPUT', 'SELECT', 'TEXTAREA'].includes(el.tagName)) {
+            const n = el.getAttribute('name');
+            if (n) return el.tagName.toLowerCase() + `[name="${CSS.escape(n)}"]`;
+        }
+        return null;
+    }
     function cssPath(el) {
         if (!el || el.nodeType !== 1) return '';
-        if (el.id) return '#' + el.id;
+        const stable = stableSelector(el);
+        if (stable) return stable;
         const parts = [];
         let cur = el;
         while (cur && cur.nodeType === 1 && cur.tagName.toLowerCase() !== 'html') {
+            // If we encounter a stable ancestor, anchor the selector
+            // there and stop — shortens selectors dramatically on
+            // pages with a few well-IDed container elements.
+            const s = stableSelector(cur);
+            if (s && cur !== el) {
+                parts.unshift(s);
+                return parts.join(' > ');
+            }
             let part = cur.tagName.toLowerCase();
             const parent = cur.parentElement;
             if (parent) {
@@ -93,6 +135,27 @@ _FOCUS_PROBE_JS = r"""
         || parseFloat(style.borderRightWidth) > 0;
     const tag = el.tagName.toLowerCase();
     const semantic = new Set(['a','button','input','select','textarea','summary','details','label']);
+    // Visible text = what a sighted user reads off the control itself.
+    // innerText respects visibility (display:none, visibility:hidden),
+    // so `aria-hidden` children are still counted (they're visible to
+    // sighted users even though SR ignores them — that's the whole
+    // point of WCAG 2.5.3 Label in Name).
+    let visibleText = (el.innerText || '').trim();
+    if (!visibleText) {
+        // For inputs, the control itself has no text; the associated
+        // <label> is the visible label.
+        if (el.tagName === 'INPUT' || el.tagName === 'SELECT' || el.tagName === 'TEXTAREA') {
+            if (el.id) {
+                const lab = document.querySelector('label[for="' + CSS.escape(el.id) + '"]');
+                if (lab) visibleText = (lab.innerText || '').trim();
+            }
+            if (!visibleText) {
+                const wrap = el.closest('label');
+                if (wrap) visibleText = (wrap.innerText || '').trim();
+            }
+        }
+    }
+
     return {
         left_page: false,
         tag,
@@ -103,6 +166,7 @@ _FOCUS_PROBE_JS = r"""
         is_semantic_tag: semantic.has(tag),
         tabindex: el.tabIndex,
         accessible_name: accessibleName(el),
+        visible_text: visibleText,
         outline_style: style.outlineStyle,
         outline_width: style.outlineWidth,
         box_shadow: style.boxShadow,
@@ -131,7 +195,15 @@ def _walk(page, options: dict[str, Any]) -> tuple[list[dict[str, Any]], bool]:
     left_page = False
 
     for _ in range(max_tabs):
+        # Record press_time as the wall-clock moment Tab actually
+        # left Playwright's input pipeline. Path B alignment uses
+        # it to match each stop to the NVDA utterances spoken in
+        # the window [press_time, next_press_time) — capturing it
+        # before .press() returns would shift the window earlier
+        # by however long the press call blocked, drifting the
+        # speech<->stop alignment whenever the page is jittery.
         page.keyboard.press("Tab")
+        press_time = time.time()
         if wait_ms:
             page.wait_for_timeout(wait_ms)
         info = page.evaluate(_FOCUS_PROBE_JS)
@@ -144,6 +216,7 @@ def _walk(page, options: dict[str, Any]) -> tuple[list[dict[str, Any]], bool]:
             left_page = True
             break
         seen_selectors.add(selector)
+        info["press_time"] = press_time
         stops.append(info)
 
     return stops, left_page
@@ -303,6 +376,13 @@ def run(page, nvda=None, options: dict[str, Any] | None = None) -> dict[str, Any
 
     issues = analyze(stops, cycled, max_tabs)
 
+    # Coverage truncation: if we hit `max_tabs` without the focus cycle
+    # wrapping or leaving the page, we STOPPED walking — we didn't
+    # finish. Downstream consumers (report, VPAT) must not read the
+    # absence of findings on un-walked elements as "pass." `truncated`
+    # makes this explicit; the HTML report surfaces it as a banner.
+    truncated = (not cycled) and len(stops) >= max_tabs
+
     return {
         "ran": True,
         "issues": issues,
@@ -311,4 +391,18 @@ def run(page, nvda=None, options: dict[str, Any] | None = None) -> dict[str, Any
         "tab_stops_count": len(stops),
         "traps_found": sum(1 for i in issues if i["rule"] == "keyboard-trap-suspected"),
         "cycled": cycled,
+        "coverage": {
+            "max_tabs": max_tabs,
+            "stops_walked": len(stops),
+            "truncated": truncated,
+            # When truncated, every tab-stop beyond the cap is a blind
+            # spot. Flag it so report consumers don't overstate coverage.
+            "note": (
+                f"Walked {len(stops)}/{max_tabs} focusable elements; the "
+                "tab walk hit its cap before cycling. Elements beyond "
+                "this point were not evaluated."
+                if truncated
+                else None
+            ),
+        },
     }

@@ -1,3 +1,4 @@
+from audit import keyboard
 from audit.keyboard import analyze
 
 
@@ -139,3 +140,32 @@ def test_multiple_issues_on_same_element():
         "keyboard-positive-tabindex",
         "keyboard-generic-focusable",
     }
+
+
+# --- Coverage-truncation signal -----------------------------------------
+# `keyboard.run()` returns a `coverage` dict so downstream consumers can
+# distinguish "walked the whole page" from "walked 100 elements and
+# gave up." The walk needs a real Playwright page; we monkeypatch the
+# walker so we can exercise run() end-to-end without a browser.
+
+
+def test_run_reports_coverage_not_truncated(monkeypatch):
+    stops = [_stop(selector=f"#a{i}") for i in range(10)]
+    monkeypatch.setattr(keyboard, "_walk", lambda page, opts: (stops, True))
+    result = keyboard.run(page=None, options={"max_tabs": 100})
+    cov = result["coverage"]
+    assert cov["truncated"] is False
+    assert cov["stops_walked"] == 10
+    assert cov["max_tabs"] == 100
+    assert cov["note"] is None
+
+
+def test_run_reports_coverage_truncated(monkeypatch):
+    """cycled=False + stops == max_tabs means we hit the cap."""
+    stops = [_stop(selector=f"#a{i}") for i in range(100)]
+    monkeypatch.setattr(keyboard, "_walk", lambda page, opts: (stops, False))
+    result = keyboard.run(page=None, options={"max_tabs": 100})
+    cov = result["coverage"]
+    assert cov["truncated"] is True
+    assert cov["stops_walked"] == 100
+    assert "100/100" in cov["note"]

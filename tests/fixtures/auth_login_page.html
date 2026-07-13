@@ -1,0 +1,35 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Login — auth fixture</title>
+</head>
+<body>
+  <main>
+    <h1>Sign in</h1>
+    <form id="login-form" onsubmit="handleLogin(event)">
+      <label>Email <input id="username" type="email" required autocomplete="username"></label>
+      <label>Password <input id="password" type="password" required autocomplete="current-password"></label>
+      <button type="submit">Sign in</button>
+    </form>
+    <p id="msg" role="status" aria-live="polite"></p>
+  </main>
+  <script>
+    function handleLogin(e) {
+      e.preventDefault();
+      var u = document.getElementById('username').value;
+      var p = document.getElementById('password').value;
+      // Fixture credentials: auditor@example.com / test1234
+      if (u === 'auditor@example.com' && p === 'test1234') {
+        document.body.innerHTML = '<main><h1>Dashboard</h1>' +
+          '<a id="logout" href="#logout">Log out</a>' +
+          '<p>Welcome, auditor. Protected content here.</p>' +
+          '</main>';
+      } else {
+        document.getElementById('msg').textContent = 'Invalid credentials';
+      }
+    }
+  </script>
+</body>
+</html>

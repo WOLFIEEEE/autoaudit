@@ -111,7 +111,48 @@ _EXTRACT_JS = r"""
         }
     }
 
-    return { marquee, infinite_animations, tiny_text };
+    // Autoplaying media with sound (WCAG 1.4.2 Audio Control, A):
+    // any <audio autoplay> or <video autoplay> without muted AND
+    // without controls presents an immediate audio stream the user
+    // can't silence except by leaving the page.
+    const autoplay_media = [];
+    for (const el of [...document.querySelectorAll('audio[autoplay], video[autoplay]')]) {
+        const muted = el.muted || el.hasAttribute('muted');
+        const controls = el.hasAttribute('controls');
+        if (muted) continue;
+        autoplay_media.push({
+            tag: el.tagName.toLowerCase(),
+            has_controls: controls,
+            selector: cssPath(el),
+            html: el.outerHTML.slice(0, 200),
+        });
+    }
+
+    // Carousels that rotate automatically without pause control.
+    // We detect: an element whose aria-live=off OR role=region with
+    // an obvious "carousel"/"slider" token in its class/id, containing
+    // a setInterval-scheduled rotation (impossible to detect 100% from
+    // static CSS, but a strong tell: transform-animation that changes
+    // a translateX value repeatedly). As a proxy we look for the
+    // class/id pattern AND absence of <button> children labelled
+    // pause/stop — noise-tolerable because confidence=low.
+    const carousels = [];
+    for (const el of [...document.querySelectorAll('[class*="carousel" i], [class*="slider" i], [class*="slideshow" i]')]) {
+        const r = el.getBoundingClientRect();
+        if (r.width < 80 || r.height < 80) continue;
+        const hasPause = !!el.querySelector(
+            'button[aria-label*="pause" i], button[aria-label*="stop" i], ' +
+            'button[title*="pause" i], button[title*="stop" i]'
+        );
+        if (hasPause) continue;
+        carousels.push({
+            selector: cssPath(el),
+            html: el.outerHTML.slice(0, 200),
+            class_name: (el.className || '').toString().slice(0, 80),
+        });
+    }
+
+    return { marquee, infinite_animations, tiny_text, autoplay_media, carousels };
 }
 """
 
@@ -195,6 +236,65 @@ def analyze(dom: dict[str, Any]) -> list[dict[str, Any]]:
                 html_snippet=t.get("html", ""),
                 details={"font_size_px": sz, "tag": t.get("tag", "")},
                 fix="Use at least 12px for body text, or a relative unit (rem/em/%) so it scales.",
+            )
+        )
+
+    # Autoplaying audio/video (WCAG 1.4.2 Audio Control, level A).
+    for idx, m in enumerate(dom.get("autoplay_media") or []):
+        tag = m.get("tag", "")
+        issues.append(
+            make_issue(
+                issue_id=f"visual-autoplay-sound-{idx}",
+                module="visual",
+                rule="visual-autoplay-sound",
+                severity="serious",
+                wcag=["1.4.2"],
+                title=f"<{tag} autoplay> plays audio without a mute mechanism",
+                description=(
+                    f"<{tag}> has autoplay set but isn't muted. WCAG 1.4.2 "
+                    "(level A) requires a mechanism to pause, stop, or mute "
+                    "any audio that plays for more than 3 seconds. Screen-"
+                    "reader users in particular need to silence this — it "
+                    "competes with their SR output."
+                ),
+                selector=m.get("selector", ""),
+                html_snippet=m.get("html", ""),
+                details={"has_controls": m.get("has_controls")},
+                fix=(
+                    "Add `muted` to auto-played media, or drop `autoplay` "
+                    "and start playback only after user interaction."
+                ),
+            )
+        )
+
+    # Carousels with no visible pause control (WCAG 2.2.2 Pause, Stop, Hide).
+    for idx, c in enumerate(dom.get("carousels") or []):
+        issues.append(
+            make_issue(
+                issue_id=f"visual-carousel-no-pause-{idx}",
+                module="visual",
+                rule="visual-carousel-no-pause",
+                severity="serious",
+                wcag=["2.2.2"],
+                confidence="low",
+                title="Carousel / slideshow has no visible pause control",
+                description=(
+                    "An element whose class or id suggests a carousel has "
+                    "no <button> labelled pause/stop. If this carousel "
+                    "auto-rotates, users with vestibular disorders or "
+                    "screen-reader users who need stable content cannot "
+                    "stop it. Confidence=low because we can't prove the "
+                    "widget auto-rotates from static markup alone."
+                ),
+                selector=c.get("selector", ""),
+                html_snippet=c.get("html", ""),
+                details={"class_name": c.get("class_name", "")},
+                fix=(
+                    "If the widget auto-rotates, add a visible pause "
+                    "button whose aria-label contains 'pause' or 'stop'. "
+                    "If it only rotates on user interaction, ignore this "
+                    "finding."
+                ),
             )
         )
 

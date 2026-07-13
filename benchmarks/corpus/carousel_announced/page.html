@@ -1,0 +1,32 @@
+<!doctype html>
+<html lang="en">
+<head><title>Carousel announced fixture</title></head>
+<body>
+<main>
+  <h1>Carousel announced</h1>
+
+  <!-- A carousel that auto-advances (no pause → still fails 2.2.1) BUT
+       announces each change in an aria-live region. So it must fire
+       carousel-auto-advance and must NOT fire carousel-change-not-
+       announced — guarding the 4.1.3 recipe against false positives. -->
+  <div class="carousel" aria-label="Promotions">
+    <div class="slide active">Slide one.</div>
+    <div class="slide">Slide two.</div>
+  </div>
+  <div aria-live="polite" class="sr-status">Slide 1 of 2</div>
+
+  <script>
+    (function () {
+      var slides = document.querySelectorAll('.carousel .slide');
+      var status = document.querySelector('.sr-status');
+      var i = 0;
+      setInterval(function () {
+        slides[i].classList.remove('active');
+        i = (i + 1) % slides.length;
+        slides[i].classList.add('active');
+        status.textContent = 'Slide ' + (i + 1) + ' of ' + slides.length;
+      }, 700);
+    })();
+  </script>
+</main>
+</body></html>

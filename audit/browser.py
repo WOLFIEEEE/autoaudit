@@ -19,11 +19,24 @@ context and therefore apply to every page the orchestrator visits.
 from __future__ import annotations
 
 import logging
+import os
 import time
 from contextlib import contextmanager
 from typing import Any
+from urllib.parse import urlparse
+
+from server.models import validate_public_http_url
 
 log = logging.getLogger(__name__)
+
+# Order of browser "channels" we try when launching. Playwright's bundled
+# chromium is preferred (pinned version, reproducible) but on some Windows
+# setups it fails with "spawn UNKNOWN" + a side-by-side activation context
+# error against its own private assembly. In that case the fallback list
+# lets us land on the user's installed Edge or Chrome, which are managed
+# by Windows and don't have that problem. Override with the env var
+# PLAYWRIGHT_CHANNEL to pin an explicit channel (e.g. "msedge" / "chrome").
+_CHANNEL_FALLBACKS: tuple[str | None, ...] = (None, "msedge", "chrome")
 
 USER_AGENT = (
     "A11yAuditTool/0.1 (+accessibility audit tool; see project README for scope)"
@@ -55,12 +68,52 @@ class BrowserManager:
         self._context = None
         self._page = None
 
+    def _launch_browser(self):
+        """Launch Chromium via the first channel that succeeds.
+
+        On Windows the bundled Chromium sometimes fails with `spawn UNKNOWN`
+        because chrome.exe's SxS manifest points to a private assembly
+        Windows cannot resolve at activation time (the file is there, but
+        Windows rejects it — typically when Chromium is unpacked under
+        %LOCALAPPDATA%). We fall back to installed Edge / Chrome in that
+        case. Any other error is raised immediately: retrying a
+        configuration bug with a different channel just hides it.
+        """
+        env_channel = os.environ.get("PLAYWRIGHT_CHANNEL")
+        channels: tuple[str | None, ...] = (
+            (env_channel,) if env_channel else _CHANNEL_FALLBACKS
+        )
+        last_exc: Exception | None = None
+        for channel in channels:
+            try:
+                kwargs: dict[str, Any] = {"headless": self.headless, "args": LAUNCH_ARGS}
+                if channel:
+                    kwargs["channel"] = channel
+                browser = self._pw.chromium.launch(**kwargs)
+                if channel:
+                    log.info("launched Chromium via channel=%s", channel)
+                return browser
+            except Exception as exc:
+                msg = str(exc)
+                is_spawn_unknown = "spawn UNKNOWN" in msg or "side-by-side" in msg
+                if not is_spawn_unknown:
+                    raise
+                log.warning(
+                    "channel=%s launch failed with SxS/spawn error; trying next",
+                    channel or "bundled",
+                )
+                last_exc = exc
+        raise RuntimeError(
+            "all Chromium channels failed to launch; install Edge or Chrome, "
+            "or set PLAYWRIGHT_CHANNEL explicitly"
+        ) from last_exc
+
     def launch(self, url: str, options: dict[str, Any]):
         from playwright.sync_api import sync_playwright
 
         self._pw = sync_playwright().start()
         try:
-            self._browser = self._pw.chromium.launch(headless=self.headless, args=LAUNCH_ARGS)
+            self._browser = self._launch_browser()
 
             vp = options.get("viewport") or {"width": 1280, "height": 720}
             context_kwargs: dict[str, Any] = {
@@ -78,6 +131,10 @@ class BrowserManager:
                 }
 
             self._context = self._browser.new_context(**context_kwargs)
+            # Re-check every browser request, including redirects and
+            # subresources. API-boundary validation alone can be bypassed by a
+            # public URL redirecting to cloud metadata or an internal service.
+            self._context.route("**/*", self._guard_request)
 
             cookies = options.get("cookies") or []
             if cookies:
@@ -106,6 +163,24 @@ class BrowserManager:
             # whatever we built so we don't leak Chromium processes.
             self.close()
             raise
+
+    @staticmethod
+    def _guard_request(route, request) -> None:
+        request_url = request.url
+        parsed = urlparse(request_url)
+        if parsed.scheme in ("http", "https"):
+            try:
+                validate_public_http_url(request_url)
+            except ValueError as exc:
+                # Log only the host; URLs may contain sensitive query strings.
+                log.warning(
+                    "blocked browser request to disallowed host %s: %s",
+                    parsed.hostname or "<missing>",
+                    exc,
+                )
+                route.abort("blockedbyclient")
+                return
+        route.continue_()
 
     def goto(self, url: str, timeout_ms: int | None = None):
         """Navigate the existing page to a new URL.

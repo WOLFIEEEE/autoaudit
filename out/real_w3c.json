@@ -1,0 +1,278 @@
+{
+  "url": "https://www.w3.org/WAI/",
+  "timestamp": "2026-04-22T05:49:09Z",
+  "duration_seconds": 10.49,
+  "summary": {
+    "score": 80,
+    "grade": "B",
+    "total_issues": 5,
+    "by_severity": {
+      "critical": 1,
+      "serious": 2,
+      "moderate": 2,
+      "minor": 0
+    },
+    "by_principle": {
+      "perceivable": {
+        "score": 98,
+        "issues": 1
+      },
+      "operable": {
+        "score": 94,
+        "issues": 2
+      },
+      "understandable": {
+        "score": 100,
+        "issues": 0
+      },
+      "robust": {
+        "score": 88,
+        "issues": 2
+      }
+    },
+    "by_level": {
+      "A": {
+        "issues": 2,
+        "blocks_conformance_at_this_level_or_above": true,
+        "by_severity": {
+          "critical": 1,
+          "serious": 1,
+          "moderate": 0,
+          "minor": 0
+        }
+      },
+      "AA": {
+        "issues": 1,
+        "blocks_conformance_at_this_level_or_above": true,
+        "by_severity": {
+          "critical": 0,
+          "serious": 1,
+          "moderate": 0,
+          "minor": 0
+        }
+      },
+      "AAA": {
+        "issues": 2,
+        "blocks_conformance_at_this_level_or_above": true,
+        "by_severity": {
+          "critical": 0,
+          "serious": 0,
+          "moderate": 2,
+          "minor": 0
+        }
+      },
+      "unmapped": {
+        "issues": 0
+      }
+    },
+    "conformance": {
+      "A_conformant": false,
+      "AA_conformant": false,
+      "AAA_conformant": false
+    }
+  },
+  "issues": [
+    {
+      "id": "keyboard-no-accessible-name-8",
+      "module": "keyboard",
+      "rule": "keyboard-no-accessible-name",
+      "severity": "critical",
+      "principle": "robust",
+      "level": "A",
+      "confidence": "high",
+      "wcag_criteria": [
+        "4.1.2"
+      ],
+      "title": "Focusable element has no accessible name",
+      "description": "When this element receives keyboard focus, screen readers have nothing to announce. Users cannot identify what the control does.",
+      "element": {
+        "selector": "div:nth-of-type(2) > nav > ul > li:nth-of-type(3) > form > div > button",
+        "html_snippet": "<button class=\"button button-icon button-nobg button-noborder\"><span><svg focusable=\"false\" aria-label=\"Submit Search\" class=\"icon-search \"><use xlink:href=\"/WAI/assets/images/icons.svg#icon-search\"><",
+        "text_content": ""
+      },
+      "details": {
+        "tag": "button",
+        "role": "",
+        "tab_index": 9
+      },
+      "fix_suggestion": "Add visible text, aria-label, or a <label for> associating the control with a descriptive label."
+    },
+    {
+      "id": "keyboard-no-focus-indicator-53",
+      "module": "keyboard",
+      "rule": "keyboard-no-focus-indicator",
+      "severity": "serious",
+      "principle": "operable",
+      "level": "AA",
+      "confidence": "high",
+      "wcag_criteria": [
+        "2.4.7"
+      ],
+      "title": "Focused element has no visible focus indicator",
+      "description": "Sighted keyboard users rely on a visible outline, border, or box-shadow to know which element has focus. outline:none with no replacement style leaves them lost.",
+      "element": {
+        "selector": "#main > div:nth-of-type(1) > div:nth-of-type(2) > section:nth-of-type(3) > div:nth-of-type(1) > iframe",
+        "html_snippet": "<iframe title=\"Video\" width=\"560\" height=\"315\" src=\"https://www.youtube-nocookie.com/embed/iWO5N3n1DXU\" allowfullscreen=\"\"></iframe>",
+        "text_content": ""
+      },
+      "details": {
+        "outline_style": "none",
+        "box_shadow": "none"
+      },
+      "fix_suggestion": "Add a :focus or :focus-visible style with a clearly visible outline, box-shadow, or border change."
+    },
+    {
+      "id": "keyboard-generic-focusable-53",
+      "module": "keyboard",
+      "rule": "keyboard-generic-focusable",
+      "severity": "serious",
+      "principle": "robust",
+      "level": "A",
+      "confidence": "high",
+      "wcag_criteria": [
+        "4.1.2"
+      ],
+      "title": "Focusable element has no semantic tag and no role attribute",
+      "description": "Screen readers can't tell users what kind of control this is. This is the classic <div onclick> / <span tabindex> anti-pattern.",
+      "element": {
+        "selector": "#main > div:nth-of-type(1) > div:nth-of-type(2) > section:nth-of-type(3) > div:nth-of-type(1) > iframe",
+        "html_snippet": "<iframe title=\"Video\" width=\"560\" height=\"315\" src=\"https://www.youtube-nocookie.com/embed/iWO5N3n1DXU\" allowfullscreen=\"\"></iframe>",
+        "text_content": ""
+      },
+      "details": {
+        "tag": "iframe",
+        "tab_index": 54
+      },
+      "fix_suggestion": "Use a semantic element (<button>, <a>), or add an appropriate role (role=\"button\") plus keyboard handlers."
+    },
+    {
+      "id": "preferences-no-reduced-motion-query",
+      "module": "preferences",
+      "rule": "preferences-no-reduced-motion-query",
+      "severity": "moderate",
+      "principle": "operable",
+      "level": "AAA",
+      "confidence": "high",
+      "wcag_criteria": [
+        "2.3.3"
+      ],
+      "title": "No @media (prefers-reduced-motion) support detected",
+      "description": "The page's stylesheets contain no rules that adapt to the user's `prefers-reduced-motion` OS setting. Users with vestibular disorders who request reduced motion will still see every animation at full amplitude.",
+      "element": {
+        "selector": "stylesheet",
+        "html_snippet": "",
+        "text_content": ""
+      },
+      "details": {},
+      "fix_suggestion": "Add a stylesheet block:\n  @media (prefers-reduced-motion: reduce) {\n    *, *::before, *::after {\n      animation-duration: 0.01ms !important;\n      animation-iteration-count: 1 !important;\n      transition-duration: 0.01ms !important;\n    }\n  }"
+    },
+    {
+      "id": "preferences-no-forced-colors-query",
+      "module": "preferences",
+      "rule": "preferences-no-forced-colors-query",
+      "severity": "moderate",
+      "principle": "perceivable",
+      "level": "AAA",
+      "confidence": "high",
+      "wcag_criteria": [
+        "1.4.8"
+      ],
+      "title": "No @media (forced-colors: active) support detected",
+      "description": "The page has no styles scoped to `forced-colors: active`. In Windows High Contrast mode (and macOS/iOS increased contrast) the browser overrides colors using system palette; author styles often lose semantic distinctions (e.g. disabled vs. active buttons become identical).",
+      "element": {
+        "selector": "stylesheet",
+        "html_snippet": "",
+        "text_content": ""
+      },
+      "details": {},
+      "fix_suggestion": "Test the page with Windows High Contrast or Chrome's `Emulate CSS media feature forced-colors` devtool. Add `@media (forced-colors: active)` rules that use system colors (`CanvasText`, `Highlight`, `ButtonText`, etc.) or `forced-color-adjust: none` where custom colors are semantically required."
+    }
+  ],
+  "modules": {
+    "wcag_engine": {
+      "ran": true,
+      "issues_found": 0,
+      "duration_seconds": 1.04,
+      "error": null
+    },
+    "structure": {
+      "ran": true,
+      "issues_found": 0,
+      "duration_seconds": 0.008,
+      "error": null
+    },
+    "aria": {
+      "ran": true,
+      "issues_found": 0,
+      "duration_seconds": 0.007,
+      "error": null
+    },
+    "media": {
+      "ran": true,
+      "issues_found": 0,
+      "duration_seconds": 0.004,
+      "error": null
+    },
+    "cognitive": {
+      "ran": true,
+      "issues_found": 0,
+      "duration_seconds": 0.007,
+      "error": null
+    },
+    "visual": {
+      "ran": true,
+      "issues_found": 0,
+      "duration_seconds": 0.006,
+      "error": null
+    },
+    "responsive": {
+      "ran": true,
+      "issues_found": 0,
+      "duration_seconds": 0.01,
+      "error": null
+    },
+    "reflow": {
+      "ran": true,
+      "issues_found": 0,
+      "duration_seconds": 0.66,
+      "error": null
+    },
+    "mobile": {
+      "ran": true,
+      "issues_found": 0,
+      "duration_seconds": 0.56,
+      "error": null
+    },
+    "keyboard": {
+      "ran": true,
+      "issues_found": 3,
+      "duration_seconds": 3.742,
+      "error": null
+    },
+    "forms": {
+      "ran": true,
+      "issues_found": 0,
+      "duration_seconds": 0.004,
+      "error": null
+    },
+    "widgets": {
+      "ran": true,
+      "issues_found": 0,
+      "duration_seconds": 0.005,
+      "error": null
+    },
+    "preferences": {
+      "ran": true,
+      "issues_found": 2,
+      "duration_seconds": 0.012,
+      "error": null
+    },
+    "screen_reader": {
+      "ran": true,
+      "issues_found": 0,
+      "duration_seconds": 0.034,
+      "error": null
+    }
+  },
+  "nvda_status": "skipped"
+}

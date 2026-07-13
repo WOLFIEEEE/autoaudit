@@ -1,0 +1,30 @@
+<!doctype html>
+<html lang="en">
+<head><title>Carousel auto-advance fixture</title></head>
+<body>
+<main>
+  <h1>Carousel auto-advance</h1>
+
+  <!-- A slideshow whose active slide rotates on a timer, with NO pause /
+       stop control. The auto-advance recipe should observe the active
+       slide changing and fire carousel-auto-advance (WCAG 2.2.1).
+       Inline script only — no external JS. -->
+  <div class="carousel" aria-label="Promotions">
+    <div class="slide active">Slide one — some promotional text.</div>
+    <div class="slide">Slide two — more promotional text.</div>
+    <div class="slide">Slide three — final promotional text.</div>
+  </div>
+
+  <script>
+    (function () {
+      var slides = document.querySelectorAll('.carousel .slide');
+      var i = 0;
+      setInterval(function () {
+        slides[i].classList.remove('active');
+        i = (i + 1) % slides.length;
+        slides[i].classList.add('active');
+      }, 700);
+    })();
+  </script>
+</main>
+</body></html>

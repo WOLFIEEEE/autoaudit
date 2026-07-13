@@ -1,0 +1,22 @@
+<!doctype html>
+<html lang="en"><head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Clean page fixture</title>
+</head>
+<body>
+<main>
+  <h1>Clean page</h1>
+  <p>This fixture is designed to be WCAG-clean: no silent controls,
+    proper lang, properly labelled form. Any rule firing against this
+    fixture is a potential false positive.</p>
+  <form aria-label="Contact">
+    <fieldset>
+      <legend>Sign up</legend>
+      <label>Email <input type="email" name="email" autocomplete="email" required></label>
+      <label>Password <input type="password" name="password" autocomplete="new-password" required></label>
+      <button type="submit">Sign up</button>
+    </fieldset>
+  </form>
+</main>
+</body></html>

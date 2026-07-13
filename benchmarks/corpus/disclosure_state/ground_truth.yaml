@@ -1,0 +1,14 @@
+notes: |
+  A toggle (Bootstrap data-target) that reveals a hidden region but has
+  no aria-expanded — a screen-reader user is never told whether the
+  region is open or closed (WCAG 4.1.2). Layer 1 of audit/reveal.py runs
+  on the default (no-actuation) audit, so this fires without options.
+  The second toggle is correctly authored (aria-expanded present) and
+  must NOT fire.
+expected:
+  - rule: disclosure-missing-expanded-state
+    min_count: 1
+    max_count: 1
+forbidden:
+  # Both controls are real <button>s with names — no fake-button noise.
+  - rule: fake-button-noninteractive

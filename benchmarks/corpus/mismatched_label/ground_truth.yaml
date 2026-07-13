@@ -1,0 +1,10 @@
+notes: |
+  WCAG 2.5.3 Label in Name fixture. Visible text "Save" but
+  aria-label overrides with different words. Should fire once.
+expected:
+  - rule: sr-label-in-name
+    min_count: 1
+    max_count: 1
+forbidden:
+  # Should NOT fire: the button has a visible name, so it's not silent.
+  - rule: sr-silent-interactive

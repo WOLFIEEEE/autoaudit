@@ -1,4 +1,8 @@
-from audit.cognitive import analyze
+from audit.cognitive import (
+    _flesch_kincaid_grade,
+    analyze,
+    analyze_reading_level,
+)
 
 
 def _rules(issues):
@@ -45,3 +49,68 @@ def test_duplicate_text_same_url_not_flagged():
         {"text": "Home", "href": "/", "selector": "a:nth-of-type(2)", "html": "<a>"},
     ]
     assert "cognitive-duplicate-link-text" not in _rules(analyze(links))
+
+
+# ---------------------------------------------------------------------
+# Reading level (WCAG 3.1.5). Pure text-statistical, no network.
+
+
+def test_reading_level_short_text_returns_none():
+    # Under MIN_WORDS_FOR_READING_ANALYSIS = 50. Don't flag.
+    assert _flesch_kincaid_grade("Hello world. Short.") is None
+
+
+def test_reading_level_simple_text_not_flagged():
+    # Clear, short-sentence content should land well below the flag
+    # threshold (grade 10). Generated to be >= 50 words.
+    text = " ".join([
+        "We sell cats.",
+        "The cats are fluffy.",
+        "They eat fish and sleep all day.",
+        "You can adopt one at our shop.",
+        "We are open every day except Sunday.",
+        "Bring a bag and a toy.",
+        "We will meet you at the door.",
+        "Your new cat will be happy with you.",
+        "Say hello and come by soon.",
+        "Kids can pet the cats too.",
+    ])
+    issues = analyze_reading_level(text)
+    assert issues == []
+
+
+def test_reading_level_flags_grad_school_prose():
+    # Long sentences, polysyllabic vocabulary, passive constructions —
+    # pushes Flesch-Kincaid grade well above 10.
+    text = (
+        "The incontrovertible epistemological implications of multivariate "
+        "regression analysis, when juxtaposed with the phenomenological "
+        "underpinnings of observational methodologies, necessitate a "
+        "comprehensive reconceptualization of the theoretical frameworks "
+        "traditionally employed within the discipline, particularly insofar "
+        "as such frameworks presuppose an ontological stability that is "
+        "rendered untenable by contemporary critiques of post-positivist "
+        "approaches to empirical inquiry, which collectively demand a "
+        "thoroughgoing methodological reappraisal capable of accommodating "
+        "the inherent indeterminacies of social-scientific investigation."
+    )
+    issues = analyze_reading_level(text)
+    assert _rules(issues) == ["cognitive-reading-level-high"]
+    issue = issues[0]
+    assert issue["severity"] == "minor"
+    assert issue["wcag_criteria"] == ["3.1.5"]
+    assert issue["details"]["flesch_kincaid_grade"] > 10
+    assert issue["confidence"] == "medium"
+
+
+def test_reading_level_issue_carries_level_aaa():
+    """3.1.5 is AAA — make_issue should derive level=AAA from the SC."""
+    text = " ".join([
+        "The incontrovertible epistemological implications of multivariate "
+        "regression analysis necessitate reconceptualization of foundational "
+        "frameworks employed across interdisciplinary investigative paradigms, "
+        "particularly insofar as such frameworks presuppose ontological "
+        "stability that contemporary post-positivist critiques render untenable."
+    ] * 2)
+    issues = analyze_reading_level(text)
+    assert issues and issues[0]["level"] == "AAA"

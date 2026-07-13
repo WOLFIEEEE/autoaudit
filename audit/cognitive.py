@@ -1,21 +1,26 @@
-"""Cognitive module: link clarity and related content-comprehension checks.
+"""Cognitive module: link clarity and content-comprehension checks.
 
 Rules implemented:
 - cognitive-generic-link-text     WCAG 2.4.4  moderate  link text is a generic phrase like "click here"
 - cognitive-duplicate-link-text   WCAG 2.4.4  moderate  multiple links share text but point to different URLs
 - cognitive-empty-link            WCAG 2.4.4  serious   link has no accessible text at all
+- cognitive-reading-level-high    WCAG 3.1.5  minor     main content reads above lower-secondary grade
 
-Note: reading-level analysis is planned but not wired in this cut — it needs
-the `textstat` dependency which we don't pull in yet.
+Reading-level uses Flesch-Kincaid Grade Level computed inline (no
+external textstat dependency). WCAG 3.1.5 is AAA, so this fires as a
+low-severity advisory rather than a conformance blocker.
 """
 
 from __future__ import annotations
 
+import logging
 import re
 import time
 from typing import Any
 
 from audit._issue import make_issue
+
+log = logging.getLogger(__name__)
 
 GENERIC_PHRASES = {
     "click here",
@@ -34,9 +39,23 @@ GENERIC_PHRASES = {
 
 _WS_RE = re.compile(r"\s+")
 
+# Phrases that are non-descriptive no matter what follows them — "click
+# here to view", "click here for details", etc. Matched as a prefix so
+# trailing filler doesn't rescue them. Kept narrow ("click here"/"click
+# to") to avoid catching genuinely-descriptive links that merely start
+# with "read more about the nursing program".
+_GENERIC_PREFIXES = ("click here", "click to")
+
 
 def _normalize(text: str) -> str:
     return _WS_RE.sub(" ", (text or "").strip().lower())
+
+
+def _is_generic_link_text(norm: str) -> bool:
+    """True when link text is a generic, context-free phrase (2.4.4)."""
+    if norm in GENERIC_PHRASES:
+        return True
+    return any(norm.startswith(p) for p in _GENERIC_PREFIXES)
 
 
 _EXTRACT_JS = r"""
@@ -121,7 +140,7 @@ def analyze(links: list[dict[str, Any]]) -> list[dict[str, Any]]:
             )
             continue
 
-        if norm in GENERIC_PHRASES:
+        if _is_generic_link_text(norm):
             issues.append(
                 make_issue(
                     issue_id=f"cognitive-generic-link-text-{idx}",
@@ -177,6 +196,92 @@ def analyze(links: list[dict[str, Any]]) -> list[dict[str, Any]]:
     return issues
 
 
+# ---------------------------------------------------------------------
+# Reading level (WCAG 3.1.5 — AAA, "lower secondary education level").
+# We compute Flesch-Kincaid grade inline instead of pulling in textstat.
+# Target: grade <= 8 (US 8th grade ~= lower secondary). We flag > 10 to
+# avoid false positives on content that's only marginally above target.
+
+_READING_EXTRACT_JS = r"""() => {
+    function collectText(root) {
+        const clone = root.cloneNode(true);
+        for (const sel of ['nav', 'footer', 'header[role="banner"]', 'aside',
+                           'script', 'style', 'noscript', '[role="navigation"]',
+                           '[role="complementary"]', '[aria-hidden="true"]']) {
+            for (const n of clone.querySelectorAll(sel)) n.remove();
+        }
+        return (clone.textContent || '').replace(/\s+/g, ' ').trim();
+    }
+    const main = document.querySelector('main, [role="main"], article') || document.body;
+    if (!main) return '';
+    return collectText(main).slice(0, 5000);
+}"""
+
+_SYLLABLE_GROUP_RE = re.compile(r"[aeiouy]+", re.IGNORECASE)
+_WORD_RE = re.compile(r"\b[a-zA-Z]+\b")
+_SENTENCE_SPLIT_RE = re.compile(r"[.!?]+\s+|\n")
+
+READING_GRADE_TARGET = 8.0
+READING_GRADE_FLAG_THRESHOLD = 10.0
+MIN_WORDS_FOR_READING_ANALYSIS = 50
+
+
+def _count_syllables(word: str) -> int:
+    """Rough English syllable count. Good enough for FK — not perfect.
+
+    We don't need linguistic accuracy; FK is a coarse grade estimate
+    regardless of syllable algorithm. This gets us within ~0.5 grade of
+    textstat and avoids the dependency.
+    """
+    word = re.sub(r"e\b", "", word.lower())
+    if not word:
+        return 0
+    return max(1, len(_SYLLABLE_GROUP_RE.findall(word)))
+
+
+def _flesch_kincaid_grade(text: str) -> float | None:
+    sentences = [s for s in _SENTENCE_SPLIT_RE.split(text) if s.strip()]
+    words = _WORD_RE.findall(text)
+    if len(words) < MIN_WORDS_FOR_READING_ANALYSIS or not sentences:
+        return None
+    syllables = sum(_count_syllables(w) for w in words)
+    words_per_sentence = len(words) / len(sentences)
+    syllables_per_word = syllables / len(words)
+    return round(0.39 * words_per_sentence + 11.8 * syllables_per_word - 15.59, 1)
+
+
+def analyze_reading_level(text: str) -> list[dict[str, Any]]:
+    grade = _flesch_kincaid_grade(text)
+    if grade is None or grade <= READING_GRADE_FLAG_THRESHOLD:
+        return []
+    return [make_issue(
+        issue_id="cognitive-reading-level-high",
+        module="cognitive",
+        rule="cognitive-reading-level-high",
+        severity="minor",
+        wcag=["3.1.5"],
+        title=f"Main content reads at approximately grade {grade}",
+        description=(
+            "WCAG 3.1.5 (AAA) asks that content be written at or below lower "
+            "secondary education level (US grade ~8). The Flesch-Kincaid "
+            "estimate for the visible main content on this page is higher than "
+            "that target, which can exclude readers with cognitive disabilities "
+            "or lower literacy."
+        ),
+        confidence="medium",
+        details={
+            "flesch_kincaid_grade": grade,
+            "target_grade": READING_GRADE_TARGET,
+            "threshold_grade": READING_GRADE_FLAG_THRESHOLD,
+        },
+        fix=(
+            "Shorten sentences, swap jargon for plain alternatives, prefer "
+            "active voice, break long paragraphs, and consider a plain-language "
+            "summary for key sections."
+        ),
+    )]
+
+
 def run(page, options: dict[str, Any] | None = None) -> dict[str, Any]:  # noqa: ARG001
     start = time.time()
     try:
@@ -189,9 +294,21 @@ def run(page, options: dict[str, Any] | None = None) -> dict[str, Any]:  # noqa:
             "duration_seconds": round(time.time() - start, 3),
         }
     issues = analyze(links)
+
+    # Reading-level is a best-effort add-on — a page-level error here
+    # shouldn't blank out the link analysis that already succeeded.
+    reading_text = ""
+    try:
+        reading_text = page.evaluate(_READING_EXTRACT_JS) or ""
+    except Exception as exc:
+        log.debug("reading-level extraction failed: %s", exc)
+    reading_issues = analyze_reading_level(reading_text) if reading_text else []
+    issues.extend(reading_issues)
+
     return {
         "ran": True,
         "issues": issues,
         "duration_seconds": round(time.time() - start, 3),
         "links_analyzed": len(links),
+        "reading_level_analyzed": bool(reading_text),
     }

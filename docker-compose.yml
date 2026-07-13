@@ -2,7 +2,10 @@ services:
   redis:
     image: redis:7-alpine
     ports:
-      - "6379:6379"
+      # Keep the unauthenticated development Redis off the LAN. Remote NVDA
+      # workers should use an authenticated/TLS Redis deployment or a private
+      # overlay network instead of widening this binding.
+      - "127.0.0.1:6379:6379"
     restart: unless-stopped
 
   server:
@@ -11,6 +14,7 @@ services:
       - redis
     environment:
       REDIS_URL: redis://redis:6379/0
+      REDIS_REQUIRED: "true"
       DATABASE_URL: sqlite:////app/data/audits.db
       SKIP_NVDA: "true"
       LOG_FORMAT: "json"
@@ -20,6 +24,10 @@ services:
     ports:
       - "8000:8000"
     restart: unless-stopped
+    init: true
+    ipc: host
+    security_opt:
+      - no-new-privileges:true
 
   worker:
     build: .
@@ -27,6 +35,7 @@ services:
       - redis
     environment:
       REDIS_URL: redis://redis:6379/0
+      REDIS_REQUIRED: "true"
       DATABASE_URL: sqlite:////app/data/audits.db
       SKIP_NVDA: "true"
       LOG_FORMAT: "json"
@@ -41,3 +50,7 @@ services:
     healthcheck:
       disable: true
     restart: unless-stopped
+    init: true
+    ipc: host
+    security_opt:
+      - no-new-privileges:true

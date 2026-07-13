@@ -1,6 +1,6 @@
 # Dockerfile for the FastAPI server + Celery worker (no NVDA — Linux).
 # NVDA auditing requires a Windows host; run that worker natively.
-FROM mcr.microsoft.com/playwright/python:v1.44.0-jammy
+FROM mcr.microsoft.com/playwright/python:v1.61.0-noble
 
 WORKDIR /app
 
@@ -9,8 +9,14 @@ RUN pip install --no-cache-dir -r requirements.txt
 
 COPY . .
 
-# Pre-fetch axe-core so containers can run offline.
-RUN python scripts/fetch_axe.py || echo "axe fetch failed; will use CDN at runtime"
+# Pre-fetch the pinned, checksum-verified axe-core release. A failed fetch
+# fails the image build rather than silently executing a runtime CDN response.
+RUN python scripts/fetch_axe.py
+
+# Audited pages are untrusted input. Do not give Chromium or the worker root
+# privileges inside the container. The Playwright image provides `pwuser`.
+RUN mkdir -p /app/data && chown -R pwuser:pwuser /app
+USER pwuser
 
 ENV SKIP_NVDA=true \
     PYTHONUNBUFFERED=1

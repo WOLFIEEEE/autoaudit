@@ -58,3 +58,69 @@ def test_make_issue_explicit_principle_overrides_derivation():
         principle="robust",
     )
     assert issue["principle"] == "robust"
+
+
+def test_make_issue_attaches_fingerprint():
+    from audit._issue import make_issue
+
+    issue = make_issue(
+        issue_id="t",
+        module="x",
+        rule="x-r",
+        severity="minor",
+        wcag=["1.4.3"],
+        title="test",
+        selector="#a",
+        html_snippet="<a/>",
+    )
+    assert "fingerprint" in issue
+    # Don't pin the exact length — the truncation width is an
+    # implementation detail of issue_fingerprint. What we want to
+    # guarantee is "non-empty, hex, deterministic".
+    fp = issue["fingerprint"]
+    assert isinstance(fp, str) and fp
+    assert all(c in "0123456789abcdef" for c in fp)
+
+
+def test_make_issue_attaches_evidence_list():
+    """`evidence` starts with the detecting module so the dedup pass
+    can merge evidence across overlapping findings."""
+    from audit._issue import make_issue
+
+    issue = make_issue(
+        issue_id="t", module="keyboard", rule="x", severity="minor",
+        wcag=["1.4.3"], title="",
+    )
+    assert issue["evidence"] == ["keyboard"]
+
+
+def test_make_issue_attaches_understanding_url():
+    from audit._issue import make_issue
+
+    issue = make_issue(
+        issue_id="t", module="x", rule="x", severity="minor",
+        wcag=["1.4.3"], title="",
+    )
+    assert issue["understanding_url"] and "contrast-minimum" in issue["understanding_url"]
+
+
+def test_make_issue_level_derived_from_wcag():
+    """A level-AA SC should propagate to the issue's level field."""
+    from audit._issue import make_issue
+
+    issue = make_issue(
+        issue_id="t", module="x", rule="x", severity="minor",
+        wcag=["1.4.3"], title="",
+    )
+    assert issue["level"] == "AA"
+
+
+def test_make_issue_level_none_for_obsolete_only_wcag():
+    """Obsolete 4.1.1 alone → level None (doesn't block 2.2 conformance)."""
+    from audit._issue import make_issue
+
+    issue = make_issue(
+        issue_id="t", module="x", rule="x", severity="minor",
+        wcag=["4.1.1"], title="",
+    )
+    assert issue["level"] is None

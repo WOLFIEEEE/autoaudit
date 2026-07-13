@@ -1,0 +1,250 @@
+# Rule regression corpus.
+#
+# Each entry is a hand-crafted DOM snapshot that exercises ONE rule
+# (or its negative — i.e. a snapshot that should NOT fire any rule).
+# The test harness in tests/test_rule_regression.py iterates this
+# file and asserts:
+#
+#   * every rule listed in `must_fire` fires
+#   * no rule listed in `must_not_fire` fires
+#
+# Adding a new rule? Add a positive AND a negative case so a future
+# refactor can't accidentally cause the rule to fire on every page or
+# never fire at all.
+#
+# Snapshots match each module's `analyze(dom)` input shape — see the
+# module's _EXTRACT_JS for the exact keys it consumes.
+
+# ====================================================================
+# audit/structure.py
+# ====================================================================
+
+- id: structure-title-missing
+  module: structure
+  dom:
+    lang: "en"
+    title: ""
+    headings: [{level: 1, text: "x", selector: "h1", html: "<h1>x</h1>"}]
+    landmarks: {main: 1, nav: 0, banner: 0, contentinfo: 0}
+    tables: []
+    iframes: []
+    lang_of_parts: []
+  must_fire: ["structure-title-missing"]
+  must_not_fire: ["structure-title-too-short", "structure-title-generic"]
+
+- id: structure-title-too-short
+  module: structure
+  dom:
+    lang: "en"
+    title: "Hi"
+    headings: [{level: 1, text: "x", selector: "h1", html: "<h1>x</h1>"}]
+    landmarks: {main: 1, nav: 0, banner: 0, contentinfo: 0}
+    tables: []
+    iframes: []
+    lang_of_parts: []
+  must_fire: ["structure-title-too-short"]
+  must_not_fire: ["structure-title-missing", "structure-title-generic"]
+
+- id: structure-title-generic-document
+  module: structure
+  dom:
+    lang: "en"
+    title: "Document"
+    headings: [{level: 1, text: "x", selector: "h1", html: "<h1>x</h1>"}]
+    landmarks: {main: 1, nav: 0, banner: 0, contentinfo: 0}
+    tables: []
+    iframes: []
+    lang_of_parts: []
+  must_fire: ["structure-title-generic"]
+  must_not_fire: ["structure-title-too-short", "structure-title-missing"]
+
+- id: structure-title-good
+  module: structure
+  dom:
+    lang: "en"
+    title: "Account settings — Acme"
+    headings: [{level: 1, text: "x", selector: "h1", html: "<h1>x</h1>"}]
+    landmarks: {main: 1, nav: 0, banner: 0, contentinfo: 0}
+    tables: []
+    iframes: []
+    lang_of_parts: []
+  must_fire: []
+  must_not_fire:
+    - structure-title-missing
+    - structure-title-too-short
+    - structure-title-generic
+
+- id: structure-iframe-no-title
+  module: structure
+  dom:
+    lang: "en"
+    title: "Page"
+    headings: [{level: 1, text: "x", selector: "h1", html: "<h1>x</h1>"}]
+    landmarks: {main: 1, nav: 0, banner: 0, contentinfo: 0}
+    tables: []
+    iframes:
+      - {title: "", aria_label: "", src: "https://x", has_aria_hidden: false,
+         selector: "iframe", html: "<iframe src=https://x></iframe>"}
+    lang_of_parts: []
+  must_fire: ["structure-iframe-no-title"]
+  must_not_fire: ["structure-iframe-title-generic"]
+
+- id: structure-iframe-title-generic
+  module: structure
+  dom:
+    lang: "en"
+    title: "Page"
+    headings: [{level: 1, text: "x", selector: "h1", html: "<h1>x</h1>"}]
+    landmarks: {main: 1, nav: 0, banner: 0, contentinfo: 0}
+    tables: []
+    iframes:
+      - {title: "iframe", aria_label: "", src: "https://x",
+         has_aria_hidden: false, selector: "iframe",
+         html: "<iframe title=iframe src=https://x></iframe>"}
+    lang_of_parts: []
+  must_fire: ["structure-iframe-title-generic"]
+  must_not_fire: ["structure-iframe-no-title"]
+
+- id: structure-iframe-titled
+  module: structure
+  dom:
+    lang: "en"
+    title: "Page"
+    headings: [{level: 1, text: "x", selector: "h1", html: "<h1>x</h1>"}]
+    landmarks: {main: 1, nav: 0, banner: 0, contentinfo: 0}
+    tables: []
+    iframes:
+      - {title: "Stripe payment form", aria_label: "", src: "https://js.stripe.com/x",
+         has_aria_hidden: false, selector: "iframe", html: "<iframe ...></iframe>"}
+    lang_of_parts: []
+  must_fire: []
+  must_not_fire: ["structure-iframe-no-title", "structure-iframe-title-generic"]
+
+- id: structure-no-h1
+  module: structure
+  dom:
+    lang: "en"
+    title: "Hello world page"
+    headings: [{level: 2, text: "x", selector: "h2", html: "<h2>x</h2>"}]
+    landmarks: {main: 1, nav: 0, banner: 0, contentinfo: 0}
+    tables: []
+    iframes: []
+    lang_of_parts: []
+  must_fire: ["structure-no-h1"]
+  must_not_fire: ["structure-multiple-h1", "structure-heading-skip"]
+
+- id: structure-heading-skip
+  module: structure
+  dom:
+    lang: "en"
+    title: "Hello world page"
+    headings:
+      - {level: 1, text: "a", selector: "h1", html: "<h1>a</h1>"}
+      - {level: 3, text: "b", selector: "h3", html: "<h3>b</h3>"}
+    landmarks: {main: 1, nav: 0, banner: 0, contentinfo: 0}
+    tables: []
+    iframes: []
+    lang_of_parts: []
+  must_fire: ["structure-heading-skip"]
+
+# ====================================================================
+# audit/live_regions.py
+# ====================================================================
+
+- id: live-region-silenced
+  module: live_regions
+  dom:
+    - role: "alert"
+      aria_live: "off"
+      aria_atomic: null
+      aria_relevant: null
+      initial_text_length: 5
+      tag: "div"
+      selector: "#alert"
+      html: "<div role=alert aria-live=off>boom</div>"
+  must_fire: ["live-region-silenced"]
+  must_not_fire: ["live-region-role-conflict"]
+
+- id: live-region-role-conflict
+  module: live_regions
+  dom:
+    - role: "alert"
+      aria_live: "polite"
+      aria_atomic: null
+      aria_relevant: null
+      initial_text_length: 5
+      tag: "div"
+      selector: "#alert"
+      html: "<div role=alert aria-live=polite>boom</div>"
+  must_fire: ["live-region-role-conflict"]
+  must_not_fire: ["live-region-silenced"]
+
+- id: live-region-empty-on-load
+  module: live_regions
+  dom:
+    - role: "status"
+      aria_live: ""
+      aria_atomic: null
+      aria_relevant: null
+      initial_text_length: 0
+      tag: "div"
+      selector: "#status"
+      html: "<div role=status></div>"
+  must_fire: ["live-region-empty-on-load"]
+  must_not_fire: ["live-region-silenced", "live-region-role-conflict"]
+
+- id: live-region-healthy
+  module: live_regions
+  dom:
+    - role: "status"
+      aria_live: ""
+      aria_atomic: null
+      aria_relevant: null
+      initial_text_length: 5
+      tag: "div"
+      selector: "#status"
+      html: "<div role=status>Ready.</div>"
+  must_fire: []
+  must_not_fire:
+    - live-region-silenced
+    - live-region-role-conflict
+    - live-region-empty-on-load
+
+# ====================================================================
+# audit/color_only.py
+# ====================================================================
+
+- id: color-only-inline-marker
+  module: color_only
+  dom:
+    inline_markers:
+      - {tag: "span", text: "Email", text_lower: "email",
+         color: "rgb(220,30,30)", rgb: [220, 30, 30],
+         parent_text: "Email", has_icon_child: false,
+         has_icon_sibling: false, font_weight: "400",
+         selector: "label > span", html: "<span>Email</span>"}
+    color_only_links: []
+  must_fire: ["color-only-inline-marker"]
+
+- id: color-only-marker-with-asterisk
+  module: color_only
+  dom:
+    inline_markers:
+      - {tag: "span", text: "Email *", text_lower: "email *",
+         color: "rgb(220,30,30)", rgb: [220, 30, 30],
+         parent_text: "Email *", has_icon_child: false,
+         has_icon_sibling: false, font_weight: "400",
+         selector: "label > span", html: "<span>Email *</span>"}
+    color_only_links: []
+  must_fire: []
+  must_not_fire: ["color-only-inline-marker"]
+
+- id: color-only-link
+  module: color_only
+  dom:
+    inline_markers: []
+    color_only_links:
+      - {text: "click here", color: "rgb(0,80,200)",
+         parent_color: "rgb(20,20,20)",
+         selector: "p > a", html: "<a>click here</a>"}
+  must_fire: ["color-only-link"]

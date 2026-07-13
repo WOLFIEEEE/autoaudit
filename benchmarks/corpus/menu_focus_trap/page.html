@@ -1,0 +1,33 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <title>Menu focus trap fixture</title>
+  <style>
+    #menu {
+      position: fixed; top: 0; left: 0;
+      width: 100%; height: 100%;
+      background: #fff; padding: 2rem;
+    }
+  </style>
+</head>
+<body>
+<main>
+  <h1>Menu focus trap</h1>
+
+  <!-- An overlay hamburger menu that opens full-screen (position:fixed,
+       covers the viewport) but implements NO focus trap. Tabbing past
+       the menu's own links reaches the page link behind it, so the
+       focus-trap recipe should fire menu-focus-not-trapped (WCAG 2.4.3).
+       Inline handler only — no external JS. -->
+  <button class="hamburger" aria-controls="menu"
+          onclick="document.getElementById('menu').style.display='block';">Menu</button>
+
+  <nav id="menu" style="display:none;" aria-label="Mobile">
+    <a href="#item1">Menu item 1</a>
+    <a href="#item2">Menu item 2</a>
+  </nav>
+
+  <!-- The control the escaping focus lands on. -->
+  <a href="#page-link">Page link behind the menu</a>
+</main>
+</body></html>

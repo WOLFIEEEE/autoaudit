@@ -1,0 +1,12 @@
+notes: |
+  A <button accesskey="s"> with a single-character access key. Should
+  fire the WCAG 2.1.4 access-key rule. The button has visible text, so
+  it must NOT trip the silent-interactive / no-accessible-name rules —
+  guarding char_key_shortcuts against bleeding into unrelated findings.
+expected:
+  - rule: char-key-shortcut-accesskey
+    min_count: 1
+    max_count: 1
+forbidden:
+  - rule: sr-silent-interactive
+  - rule: keyboard-no-accessible-name

@@ -23,23 +23,55 @@ try:
     import redis  # type: ignore
 
     _client: "redis.Redis | None" = redis.Redis.from_url(
-        CONFIG.redis_url, socket_connect_timeout=1, decode_responses=True
+        CONFIG.redis_url,
+        socket_connect_timeout=0.5,
+        socket_timeout=0.5,
+        decode_responses=True,
     )
+    if not CONFIG.cache_enabled:
+        _client = None
 except Exception as exc:  # pragma: no cover - import-time guard
-    log.warning("Redis unavailable, caching disabled: %s", exc)
+    log.warning(
+        "Redis unavailable (%s: %s); caching disabled", type(exc).__name__, exc
+    )
     _client = None
 
 
-def _url_key(url: str) -> str:
-    digest = hashlib.sha256(url.encode("utf-8")).hexdigest()[:16]
-    return f"a11y:audit:url:{digest}"
+_SENSITIVE_OPTION_KEYS = frozenset(
+    {"basic_auth", "cookies", "headers", "login", "openrouter_api_key"}
+)
 
 
-def get_cached_result(url: str) -> dict[str, Any] | None:
-    if _client is None:
+def _is_cacheable(options: dict[str, Any] | None) -> bool:
+    """Authenticated/personalized audits must never enter the shared cache."""
+    return not any((options or {}).get(key) for key in _SENSITIVE_OPTION_KEYS)
+
+
+def _url_key(url: str, options: dict[str, Any] | None = None) -> str:
+    """Return a deterministic key for every input that can change a result.
+
+    The old URL-only key mixed target levels, viewports, module settings, and
+    even authenticated and anonymous audits.  The canonical JSON is hashed, so
+    option values are not exposed in Redis keys.
+    """
+    canonical = json.dumps(
+        {"url": url, "options": options or {}},
+        sort_keys=True,
+        separators=(",", ":"),
+        ensure_ascii=False,
+    )
+    digest = hashlib.sha256(canonical.encode("utf-8")).hexdigest()
+    return f"a11y:audit:v2:{digest}"
+
+
+def get_cached_result(
+    url: str, options: dict[str, Any] | None = None
+) -> dict[str, Any] | None:
+    if _client is None or not _is_cacheable(options):
         return None
+    key = _url_key(url, options)
     try:
-        raw = _client.get(_url_key(url))
+        raw = _client.get(key)
     except Exception as exc:
         log.debug("Redis get failed: %s", exc)
         return None
@@ -48,7 +80,7 @@ def get_cached_result(url: str) -> dict[str, Any] | None:
     if len(raw.encode("utf-8")) > _MAX_CACHE_JSON_BYTES:
         log.warning("cached result exceeds size cap; discarding")
         try:
-            _client.delete(_url_key(url))
+            _client.delete(key)
         except Exception:
             pass
         return None
@@ -58,8 +90,12 @@ def get_cached_result(url: str) -> dict[str, Any] | None:
         return None
 
 
-def set_cached_result(url: str, payload: dict[str, Any]) -> None:
-    if _client is None:
+def set_cached_result(
+    url: str,
+    payload: dict[str, Any],
+    options: dict[str, Any] | None = None,
+) -> None:
+    if _client is None or not _is_cacheable(options):
         return
     try:
         encoded = json.dumps(payload)
@@ -70,9 +106,18 @@ def set_cached_result(url: str, payload: dict[str, Any]) -> None:
         log.warning("audit result exceeds cache size cap; skipping set")
         return
     try:
-        _client.setex(_url_key(url), CONFIG.cache_ttl_seconds, encoded)
+        _client.setex(_url_key(url, options), CONFIG.cache_ttl_seconds, encoded)
     except Exception as exc:
         log.debug("Redis set failed: %s", exc)
+
+
+def delete_cached_result(url: str, options: dict[str, Any] | None = None) -> None:
+    if _client is None or not _is_cacheable(options):
+        return
+    try:
+        _client.delete(_url_key(url, options))
+    except Exception as exc:
+        log.debug("Redis delete failed: %s", exc)
 
 
 def ping() -> bool:

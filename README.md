@@ -1,6 +1,6 @@
 # Accessibility Audit Server
 
-A production-ready FastAPI service that audits web pages for WCAG 2.2 conformance. Ten analysis modules, real-NVDA support via a Windows worker, multi-page crawl, form-based login, and a structured JSON/HTML report.
+A FastAPI service that automates checks for common WCAG 2.2 barriers. It combines axe-core with custom analysis modules, optional real-NVDA support via a Windows worker, multi-page audits, form-based login, and structured JSON/HTML reports. Automated results identify likely barriers; they do not establish WCAG conformance without manual review.
 
 One URL in, full audit out. Designed for site-owner tooling — run it against your own sites from CI, as a scheduled job, or ad-hoc from the CLI.
 
@@ -16,6 +16,7 @@ Verified against real sites:
 - **Rule catalog:** [docs/rules.md](docs/rules.md)
 - **Configuration reference:** [docs/configuration.md](docs/configuration.md)
 - **Architecture notes:** [docs/architecture.md](docs/architecture.md)
+- **Repository audit / improvement backlog:** [docs/repository_audit.md](docs/repository_audit.md)
 - **Windows NVDA worker setup:** [docs/windows_worker.md](docs/windows_worker.md)
 
 ---
@@ -65,7 +66,7 @@ Per audit, the pipeline runs:
 
 ### Prerequisites
 
-- Python 3.11+ (tested on 3.9 through 3.13)
+- Python 3.10+ (CI currently runs Python 3.11)
 - Redis (only required for the background queue; the quick endpoint works without it)
 
 ### Install
@@ -277,6 +278,8 @@ All configuration is environment-variable driven. Highlights:
 | `DATABASE_URL`          | `sqlite:///./data/audits.db`     | Audit result persistence (SQLite) |
 | `MAX_AUDIT_SECONDS`     | `180`                            | Celery soft-timeout per audit |
 | `CACHE_TTL_SECONDS`     | `900`                            | Same-URL result cache TTL |
+| `CACHE_ENABLED`         | `true`                           | Disable the optional Redis result cache |
+| `REDIS_REQUIRED`        | `false`                          | Treat Redis failure as unhealthy (Compose sets true) |
 | `API_KEYS`              | (unset → auth off)               | Comma-separated allowed keys |
 | `RATE_LIMIT_PER_MIN`    | `0` (off)                        | Per-key / per-IP rate limit |
 | `LOG_FORMAT`            | `text`                           | Set to `json` for structured logs |
@@ -302,14 +305,15 @@ Full reference in [docs/configuration.md](docs/configuration.md).
 ## Testing
 
 ```bash
-# Unit + API tests (fast, ~5 s):
+# Unit + API tests (about 1-2 minutes on a typical developer machine):
 python -m pytest -m "not slow"
 
 # Everything including Playwright integration (needs Chromium + vendor/axe):
 python -m pytest
 ```
 
-170 tests, 4 of which spin up real Chromium against a fixture page. CI runs the fast suite on every push; the slow suite runs nightly.
+The repository currently contains more than 400 tests. Browser-backed tests are
+marked `slow`; CI runs both the fast and browser-backed jobs on every push.
 
 ---
 

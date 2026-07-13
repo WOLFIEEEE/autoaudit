@@ -1,0 +1,11 @@
+notes: |
+  A focusable custom toggle (role=button, tabindex=0) that opens a menu
+  on click but has no keydown handler, so Enter/Space do nothing —
+  keyboard users cannot operate it (WCAG 2.1.1). The recipe runs during
+  the default mobile pass (which actuates reveal): it clicks the toggle,
+  restores, then focuses and presses Enter/Space and compares. Fires
+  keyboard-inoperable-control exactly once.
+expected:
+  - rule: keyboard-inoperable-control
+    min_count: 1
+    max_count: 1

@@ -1,0 +1,21 @@
+<!doctype html>
+<html lang="en">
+<head><title>Keyboard-inoperable control fixture</title></head>
+<body>
+<main>
+  <h1>Keyboard operability</h1>
+
+  <!-- A custom, FOCUSABLE toggle (role=button, tabindex=0) that opens a
+       menu on CLICK only — it has no keydown handler, so Enter/Space do
+       nothing. Mouse users can open it; keyboard users cannot. The
+       recipe should fire keyboard-inoperable-control (WCAG 2.1.1).
+       onclick TOGGLES so the auditor's restore can close it. -->
+  <div role="button" tabindex="0" class="menu-toggle" aria-controls="m1"
+       onclick="var m=document.getElementById('m1'); m.style.display = (m.style.display==='block'?'none':'block');">Options</div>
+
+  <div id="m1" style="display:none;">
+    <a href="#opt1">Option one</a>
+    <a href="#opt2">Option two</a>
+  </div>
+</main>
+</body></html>

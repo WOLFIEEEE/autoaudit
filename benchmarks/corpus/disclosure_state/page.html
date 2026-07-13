@@ -1,0 +1,19 @@
+<!doctype html>
+<html lang="en">
+<head><title>Disclosure state fixture</title></head>
+<body>
+<main>
+  <h1>Disclosure state</h1>
+
+  <!-- TRUE POSITIVE: a toggle that reveals a hidden region (Bootstrap
+       data-target) but exposes no aria-expanded. Should fire
+       disclosure-missing-expanded-state (WCAG 4.1.2) exactly once. -->
+  <button class="accordion-toggle" data-target="#panel">Section 1</button>
+  <div id="panel" hidden><p>Hidden panel content.</p></div>
+
+  <!-- FALSE-POSITIVE GUARD: a correctly-authored toggle WITH
+       aria-expanded must NOT fire. -->
+  <button class="accordion-toggle" aria-expanded="false" aria-controls="panel2">Section 2</button>
+  <div id="panel2" hidden><p>Second panel.</p></div>
+</main>
+</body></html>
