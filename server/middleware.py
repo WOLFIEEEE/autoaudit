@@ -2,7 +2,8 @@
 optional API key auth, and simple per-key rate limiting.
 
 All behavior is opt-in via env vars:
-- API_KEYS="key1,key2,..." enables auth. Unset → open server (dev default).
+- API_KEYS="key1,key2,..." enables auth. Unset → the server refuses to
+  serve audit endpoints unless ALLOW_ANONYMOUS=1 is also set.
 - RATE_LIMIT_PER_MIN=60    enables rate limiting. Unset → no limiting.
 - LOG_FORMAT=json          emits line-per-record JSON. Default = text.
 
@@ -184,21 +185,60 @@ def _api_keys_from_env() -> set[str]:
 _PUBLIC_PATHS = {"/health", "/docs", "/redoc", "/openapi.json"}
 
 
+def _anonymous_allowed() -> bool:
+    """True when running without API keys is an explicit choice.
+
+    This used to be the silent default: no API_KEYS meant an open
+    server. That is the right default for a laptop and the wrong one for
+    anything reachable, and the failure is invisible — the service comes
+    up and serves every endpoint. Requiring ALLOW_ANONYMOUS=1 keeps the
+    dev workflow one env var away while making an unauthenticated
+    deployment a decision someone had to type.
+    """
+    return os.environ.get("ALLOW_ANONYMOUS", "").strip().lower() in {
+        "1", "true", "yes", "on",
+    }
+
+
 class ApiKeyMiddleware(BaseHTTPMiddleware):
     """Enforce an API key when ``API_KEYS`` is set.
 
     Keys are supplied via either the ``X-API-Key`` header or a
     ``Authorization: Bearer <key>`` header.
+
+    With no keys configured the server fails closed (503 on every
+    non-public path) unless ALLOW_ANONYMOUS=1 opts into an open server.
     """
 
     def __init__(self, app):
         super().__init__(app)
         self._keys = _api_keys_from_env()
         self._enabled = bool(self._keys)
+        self._anonymous_ok = _anonymous_allowed()
+        if not self._enabled and self._anonymous_ok:
+            log.warning(
+                "API_KEYS is unset and ALLOW_ANONYMOUS is on — every audit "
+                "endpoint is open and audit results are not scoped to any "
+                "caller. Do not run this way on a reachable host."
+            )
 
     async def dispatch(self, request: Request, call_next: Callable) -> Response:
-        if not self._enabled or request.url.path in _PUBLIC_PATHS:
+        if request.url.path in _PUBLIC_PATHS:
             return await call_next(request)
+
+        if not self._enabled:
+            if self._anonymous_ok:
+                return await call_next(request)
+            return JSONResponse(
+                {
+                    "detail": (
+                        "Server is not configured for authentication. Set "
+                        "API_KEYS to enable it, or ALLOW_ANONYMOUS=1 to run "
+                        "an intentionally open server."
+                    )
+                },
+                status_code=503,
+            )
 
         supplied = request.headers.get("x-api-key")
         if not supplied:

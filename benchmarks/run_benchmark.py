@@ -125,9 +125,43 @@ def summarize(scores: dict[str, dict[str, Any]]) -> dict[str, Any]:
     return {"per_rule": table}
 
 
+# Where the measured precision is published for audit/confidence.py to
+# read at runtime. Committed, so a deployed worker knows which rules have
+# evidence behind them without needing the corpus.
+PRECISION_PATH = Path(__file__).resolve().parent / "precision.json"
+
+
+def write_precision_registry(summary: dict[str, Any], fixtures_run: int) -> None:
+    """Publish per-rule precision for the confidence tiering.
+
+    Only written on a FULL run. A --fixture run measures one page and
+    would otherwise overwrite the registry with a near-empty one, quietly
+    demoting every other rule to `low`.
+    """
+    registry = {
+        "measured_over_fixtures": fixtures_run,
+        "rules": {
+            row["rule"]: {
+                "precision": row["precision"],
+                "tp": row["tp"],
+                "fp": row["fp"],
+            }
+            for row in summary["per_rule"]
+            if row["precision"] is not None
+        },
+    }
+    PRECISION_PATH.write_text(
+        json.dumps(registry, indent=2, sort_keys=True) + "\n", encoding="utf-8"
+    )
+
+
 def main() -> int:
     ap = argparse.ArgumentParser()
     ap.add_argument("--json", action="store_true", help="Emit JSON output.")
+    ap.add_argument(
+        "--no-write-precision", action="store_true",
+        help="Do not update benchmarks/precision.json.",
+    )
     ap.add_argument(
         "--fixture", default=None,
         help="Run a single named fixture (directory name under corpus/).",
@@ -165,8 +199,13 @@ def main() -> int:
     summary = summarize(per_fixture)
 
     if args.json:
+        if not args.fixture and not args.no_write_precision:
+            write_precision_registry(summary, len(fixtures))
         print(json.dumps({"fixtures": per_fixture, "summary": summary}, indent=2))
         return 1 if any_failed else 0
+
+    if not args.fixture and not args.no_write_precision:
+        write_precision_registry(summary, len(fixtures))
 
     print("Benchmark results")
     print("=" * 70)

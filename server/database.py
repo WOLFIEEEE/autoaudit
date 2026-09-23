@@ -38,11 +38,20 @@ CREATE TABLE IF NOT EXISTS audits (
     created_at TEXT NOT NULL,
     updated_at TEXT NOT NULL,
     result_json TEXT,
-    error TEXT
+    error TEXT,
+    owner_key_id TEXT
 );
 CREATE INDEX IF NOT EXISTS idx_audits_url ON audits(url);
 CREATE INDEX IF NOT EXISTS idx_audits_status ON audits(status);
+CREATE INDEX IF NOT EXISTS idx_audits_owner ON audits(owner_key_id);
 """
+
+# Columns added after the initial release. CREATE TABLE IF NOT EXISTS
+# won't add them to a database created by an older version, so we
+# reconcile on every init_db().
+_MIGRATIONS = (
+    ("owner_key_id", "ALTER TABLE audits ADD COLUMN owner_key_id TEXT"),
+)
 
 
 def _sqlite_path() -> str:
@@ -80,14 +89,42 @@ def _connect():
 def init_db() -> None:
     with _connect() as conn:
         conn.executescript(_SCHEMA)
+        existing = {row["name"] for row in conn.execute("PRAGMA table_info(audits)")}
+        for column, ddl in _MIGRATIONS:
+            if column not in existing:
+                log.info("migrating audits table: adding %s", column)
+                conn.execute(ddl)
 
 
-def create_job(job_id: str, url: str, created_at: str) -> None:
+def _owner_clause(owner_key_id: str | None) -> tuple[str, tuple[Any, ...]]:
+    """SQL fragment restricting a row lookup to one API key's jobs.
+
+    Ownership is only enforced when the caller presents a key. With
+    ``API_KEYS`` unset there is no principal to scope to, so every job is
+    anonymous and the clause is empty.
+
+    Rows written before this column existed have a NULL owner. They stay
+    readable by any authenticated caller — refusing them would orphan
+    every audit taken before the upgrade. New rows always carry an owner,
+    so the gap closes as old jobs age out via cleanup_old_results().
+    """
+    if not owner_key_id:
+        return "", ()
+    return " AND (owner_key_id IS NULL OR owner_key_id = ?)", (owner_key_id,)
+
+
+def create_job(
+    job_id: str,
+    url: str,
+    created_at: str,
+    owner_key_id: str | None = None,
+) -> None:
     with _connect() as conn:
         conn.execute(
-            "INSERT INTO audits (job_id, url, status, created_at, updated_at) "
-            "VALUES (?, ?, 'queued', ?, ?)",
-            (job_id, url, created_at, created_at),
+            "INSERT INTO audits "
+            "(job_id, url, status, created_at, updated_at, owner_key_id) "
+            "VALUES (?, ?, 'queued', ?, ?, ?)",
+            (job_id, url, created_at, created_at, owner_key_id),
         )
 
 
@@ -113,12 +150,22 @@ def save_job_result(job_id: str, result: dict[str, Any], updated_at: str) -> Non
         )
 
 
-def get_audit_result(job_id: str) -> dict[str, Any] | None:
+def get_audit_result(
+    job_id: str, owner_key_id: str | None = None
+) -> dict[str, Any] | None:
+    """Fetch one audit, optionally restricted to the key that created it.
+
+    Job ids are UUIDs, but an unguessable identifier is not an access
+    control: results carry target URLs, screenshots and the content of
+    auth-gated pages. When the caller is authenticated we scope the
+    lookup to their own jobs so one tenant cannot read another's.
+    """
+    clause, params = _owner_clause(owner_key_id)
     with _connect() as conn:
         row = conn.execute(
             "SELECT job_id, url, status, created_at, updated_at, result_json, error "
-            "FROM audits WHERE job_id = ?",
-            (job_id,),
+            "FROM audits WHERE job_id = ?" + clause,
+            (job_id, *params),
         ).fetchone()
 
     if row is None:
@@ -173,9 +220,14 @@ def get_audit_result(job_id: str) -> dict[str, Any] | None:
     }
 
 
-def delete_audit_result(job_id: str) -> bool:
+def delete_audit_result(job_id: str, owner_key_id: str | None = None) -> bool:
+    """Delete one audit. Scoped to the owning key when authenticated."""
+    clause, params = _owner_clause(owner_key_id)
     with _connect() as conn:
-        cur = conn.execute("DELETE FROM audits WHERE job_id = ?", (job_id,))
+        cur = conn.execute(
+            "DELETE FROM audits WHERE job_id = ?" + clause,
+            (job_id, *params),
+        )
         return cur.rowcount > 0
 
 

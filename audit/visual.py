@@ -11,9 +11,10 @@ module) already covers it well, including the hard cases (partial transparency,
 gradient backgrounds, images-of-text). Duplicating it would add noise, not
 signal; the deduplicator handles the overlap for the one rule we share.
 
-Reflow at 320px and color-blindness simulation are deferred: both require
-a screenshot pipeline (Pillow / numpy) and meaningful page interaction,
-better done as a dedicated interactive pass.
+Reflow at 320px now lives in its own module (audit/reflow.py), which
+resizes the viewport and measures real overflow rather than guessing
+from a static snapshot. Color-blindness simulation is still deferred:
+it needs a screenshot pipeline (Pillow / numpy).
 """
 
 from __future__ import annotations

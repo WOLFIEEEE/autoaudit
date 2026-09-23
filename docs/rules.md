@@ -559,7 +559,7 @@ WCAG 2.4.11 (Focus Not Obscured, Minimum, AA, new in 2.2) requires that no autho
 - **Severity:** moderate
 - **WCAG:** 3.3.1, 3.3.3
 - **Confidence:** high
-- **Source:** `audit/forms.py:264`
+- **Source:** `audit/forms.py:277`
 
 **Sample title:** Field marked aria-invalid but has no associated error description
 
@@ -572,7 +572,7 @@ Screen readers announce the field as invalid but the user never hears what went 
 - **Severity:** moderate
 - **WCAG:** 1.3.5
 - **Confidence:** high
-- **Source:** `audit/forms.py:360`
+- **Source:** `audit/forms.py:373`
 
 **Sample title:** autocomplete={...} does not satisfy WCAG 1.3.5
 
@@ -585,7 +585,7 @@ WCAG 1.3.5 (AA, Identify Input Purpose) requires fields collecting personal data
 - **Severity:** minor
 - **WCAG:** 1.3.5
 - **Confidence:** high
-- **Source:** `audit/forms.py:396`
+- **Source:** `audit/forms.py:409`
 
 **Sample title:** autocomplete contains unrecognised token(s): {...}
 
@@ -598,7 +598,7 @@ Browsers silently fall back to default behaviour when they don't recognise a tok
 - **Severity:** moderate
 - **WCAG:** 3.3.3
 - **Confidence:** medium
-- **Source:** `audit/forms.py:303`
+- **Source:** `audit/forms.py:316`
 
 **Sample title:** Error message is too vague to be actionable
 
@@ -611,7 +611,7 @@ The error text {...} is too short or generic. WCAG 3.3.3 (AA) Error Suggestion r
 - **Severity:** critical
 - **WCAG:** 3.3.2, 4.1.2
 - **Confidence:** high
-- **Source:** `audit/forms.py:237`
+- **Source:** `audit/forms.py:250`
 
 **Sample title:** <{...}> has no accessible label
 
@@ -622,7 +622,7 @@ Screen-reader users hear only the field type (e.g. 'edit') with no indication of
 - **Severity:** minor
 - **WCAG:** 1.3.5
 - **Confidence:** high
-- **Source:** `audit/forms.py:333`
+- **Source:** `audit/forms.py:346`
 
 **Sample title:** <{...} type={...}> appears to collect personal data without autocomplete
 
@@ -635,7 +635,7 @@ WCAG 1.3.5 (AA) asks that fields collecting information about the user expose an
 - **Severity:** serious
 - **WCAG:** 3.3.4
 - **Confidence:** low
-- **Source:** `audit/forms.py:520`
+- **Source:** `audit/forms.py:533`
 
 **Sample title:** No review / confirm / undo step detected for a {...}-consequence form
 
@@ -648,7 +648,7 @@ This page is declared to submit {...} data. WCAG 3.3.4 (AA) requires a mechanism
 - **Severity:** serious
 - **WCAG:** 1.3.1
 - **Confidence:** high
-- **Source:** `audit/forms.py:442`
+- **Source:** `audit/forms.py:455`
 
 **Sample title:** {...} group '{...}' has no <fieldset><legend>
 
@@ -691,7 +691,7 @@ WCAG 1.4.13 (AA) requires hover/focus-revealed content to be dismissible without
 - **Severity:** serious
 - **WCAG:** 4.1.2
 - **Confidence:** high
-- **Source:** `audit/keyboard.py:316`
+- **Source:** `audit/keyboard.py:337`
 
 **Sample title:** Focusable element has no semantic tag and no role attribute
 
@@ -704,7 +704,7 @@ Screen readers can't tell users what kind of control this is. This is the classi
 - **Severity:** critical
 - **WCAG:** 4.1.2
 - **Confidence:** high
-- **Source:** `audit/keyboard.py:262`
+- **Source:** `audit/keyboard.py:283`
 
 **Sample title:** Focusable element has no accessible name
 
@@ -717,7 +717,7 @@ When this element receives keyboard focus, screen readers have nothing to announ
 - **Severity:** serious
 - **WCAG:** 2.4.7
 - **Confidence:** high
-- **Source:** `audit/keyboard.py:286`
+- **Source:** `audit/keyboard.py:307`
 
 **Sample title:** Focused element has no visible focus indicator
 
@@ -730,7 +730,7 @@ Sighted keyboard users rely on a visible outline, border, or box-shadow to know 
 - **Severity:** moderate
 - **WCAG:** 2.4.3
 - **Confidence:** high
-- **Source:** `audit/keyboard.py:339`
+- **Source:** `audit/keyboard.py:360`
 
 **Sample title:** Element has tabindex={...} (positive)
 
@@ -743,7 +743,7 @@ Positive tabindex values override the natural DOM order and almost always create
 - **Severity:** critical
 - **WCAG:** 2.1.2
 - **Confidence:** high
-- **Source:** `audit/keyboard.py:234`
+- **Source:** `audit/keyboard.py:255`
 
 **Sample title:** Possible keyboard trap
 
@@ -1260,7 +1260,7 @@ This dropdown's submenu ({...} link{...}) becomes visible when the trigger is ho
 - **Severity:** moderate
 - **WCAG:** 1.3.1
 - **Confidence:** high
-- **Source:** `audit/screen_reader.py:1236`
+- **Source:** `audit/screen_reader.py:1336`
 
 **Sample title:** aria-hidden text was announced by NVDA
 
@@ -1273,7 +1273,7 @@ This text is marked aria-hidden="true" to hide it from assistive tech, but NVDA 
 - **Severity:** serious
 - **WCAG:** 1.3.1, 1.3.2
 - **Confidence:** high
-- **Source:** `audit/screen_reader.py:1265`
+- **Source:** `audit/screen_reader.py:1365`
 
 **Sample title:** Visible text was not read aloud in browse mode
 
@@ -1286,7 +1286,7 @@ This text is visible on the page but NVDA's read-all (browse mode) skipped it. S
 - **Severity:** serious
 - **WCAG:** 4.1.2
 - **Confidence:** high
-- **Source:** `audit/screen_reader.py:172`
+- **Source:** `audit/screen_reader.py:192`
 
 **Sample title:** <{...}> has no accessible name
 
@@ -1299,7 +1299,7 @@ When the {...} opens, screen readers announce '{...}' with no indication of what
 - **Severity:** moderate
 - **WCAG:** 1.3.1
 - **Confidence:** high
-- **Source:** `audit/screen_reader.py:208`
+- **Source:** `audit/screen_reader.py:228`
 
 Screen-reader users navigate landmarks via a list. Two {...} landmarks with the same (or empty) name are indistinguishable in that list.
 
@@ -1310,7 +1310,7 @@ Screen-reader users navigate landmarks via a list. Two {...} landmarks with the 
 - **Severity:** serious
 - **WCAG:** 1.3.1
 - **Confidence:** high
-- **Source:** `audit/screen_reader.py:152`
+- **Source:** `audit/screen_reader.py:172`
 
 **Sample title:** Heading level {...} has no text
 
@@ -1323,7 +1323,7 @@ Screen-reader users navigate by heading; empty headings appear in that list as b
 - **Severity:** serious
 - **WCAG:** 2.5.3
 - **Confidence:** high
-- **Source:** `audit/screen_reader.py:1344`
+- **Source:** `audit/screen_reader.py:1444`
 
 **Sample title:** Accessible name does not contain the visible label
 
@@ -1336,7 +1336,7 @@ The control displays '{...}' but its accessible name is '{...}'. Speech-input us
 - **Severity:** moderate
 - **WCAG:** 2.5.3
 - **Confidence:** high
-- **Source:** `audit/screen_reader.py:1144`
+- **Source:** `audit/screen_reader.py:1228`
 
 **Sample title:** NVDA announces a different name than the DOM
 
@@ -1349,7 +1349,7 @@ NVDA spoke text that doesn't overlap the element's accessible name. Speech-input
 - **Severity:** serious
 - **WCAG:** 4.1.2
 - **Confidence:** high
-- **Source:** `audit/screen_reader.py:1119`
+- **Source:** `audit/screen_reader.py:1203`
 
 **Sample title:** NVDA was silent at a focusable element
 
@@ -1362,7 +1362,7 @@ The accessibility tree exposes a name for this element, but NVDA did not announc
 - **Severity:** critical
 - **WCAG:** 4.1.2
 - **Confidence:** high
-- **Source:** `audit/screen_reader.py:128`
+- **Source:** `audit/screen_reader.py:148`
 
 **Sample title:** <{...}> has no accessible name
 
@@ -1377,7 +1377,7 @@ Chromium's accessibility tree exposes this element as a {...} but with no name. 
 - **Severity:** serious
 - **WCAG:** 2.4.1
 - **Confidence:** high
-- **Source:** `audit/skiplinks.py:245`
+- **Source:** `audit/skiplinks.py:261`
 
 **Sample title:** Skip link {...} does not move focus
 
@@ -1390,7 +1390,7 @@ The link is structured correctly (target exists and is focusable), but pressing 
 - **Severity:** serious
 - **WCAG:** 2.4.1
 - **Confidence:** medium
-- **Source:** `audit/skiplinks.py:141`
+- **Source:** `audit/skiplinks.py:157`
 
 **Sample title:** No skip link found
 
@@ -1403,7 +1403,7 @@ WCAG 2.4.1 (Bypass Blocks, level A) requires a mechanism for keyboard users to s
 - **Severity:** serious
 - **WCAG:** 2.4.1
 - **Confidence:** high
-- **Source:** `audit/skiplinks.py:184`
+- **Source:** `audit/skiplinks.py:200`
 
 **Sample title:** Skip link {...} points to a missing id
 
@@ -1416,7 +1416,7 @@ The skip link targets #{...}, but no element with that id exists in the DOM. Act
 - **Severity:** serious
 - **WCAG:** 2.4.1
 - **Confidence:** high
-- **Source:** `audit/skiplinks.py:206`
+- **Source:** `audit/skiplinks.py:222`
 
 **Sample title:** Skip link target #{...} is not focusable
 
@@ -1618,7 +1618,7 @@ The page title {...} is too short to be meaningfully descriptive. WCAG 2.4.2 req
 - **Severity:** serious
 - **WCAG:** 1.4.2
 - **Confidence:** high
-- **Source:** `audit/visual.py:246`
+- **Source:** `audit/visual.py:247`
 
 **Sample title:** <{...} autoplay> plays audio without a mute mechanism
 
@@ -1631,7 +1631,7 @@ The page title {...} is too short to be meaningfully descriptive. WCAG 2.4.2 req
 - **Severity:** serious
 - **WCAG:** 2.2.2
 - **Confidence:** low
-- **Source:** `audit/visual.py:273`
+- **Source:** `audit/visual.py:274`
 
 **Sample title:** Carousel / slideshow has no visible pause control
 
@@ -1644,7 +1644,7 @@ An element whose class or id suggests a carousel has no <button> labelled pause/
 - **Severity:** moderate
 - **WCAG:** 2.2.2
 - **Confidence:** high
-- **Source:** `audit/visual.py:195`
+- **Source:** `audit/visual.py:196`
 
 **Sample title:** Element has infinite CSS animation ({...}s cycle)
 
@@ -1657,7 +1657,7 @@ Auto-starting animations longer than 5 seconds must have a pause, stop, or hide 
 - **Severity:** serious
 - **WCAG:** 2.2.2
 - **Confidence:** high
-- **Source:** `audit/visual.py:166`
+- **Source:** `audit/visual.py:167`
 
 **Sample title:** <{...}> element is moving/blinking content with no pause control
 
@@ -1670,7 +1670,7 @@ Auto-starting animations longer than 5 seconds must have a pause, stop, or hide 
 - **Severity:** minor
 - **WCAG:** 1.4.4
 - **Confidence:** high
-- **Source:** `audit/visual.py:223`
+- **Source:** `audit/visual.py:224`
 
 **Sample title:** Text rendered at only {...}px
 

@@ -11,7 +11,7 @@ import uuid
 from contextlib import asynccontextmanager
 from pathlib import Path
 
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, Request
 from fastapi.responses import HTMLResponse
 from jinja2 import Environment, FileSystemLoader
 from starlette.concurrency import run_in_threadpool
@@ -109,8 +109,17 @@ def create_app() -> FastAPI:
             return JSONResponse(body, status_code=503)
         return body
 
+    def _owner(http_request: Request) -> str | None:
+        """Principal that owns a job, or None when auth is disabled.
+
+        AuthMiddleware sets `api_key_id` only when API_KEYS is
+        configured. With auth off there is no principal, jobs are
+        anonymous, and database scoping becomes a no-op.
+        """
+        return getattr(http_request.state, "api_key_id", None)
+
     @app.post("/audit", response_model=AuditStatus, tags=["audit"])
-    def start_audit(request: AuditRequest) -> AuditStatus:
+    def start_audit(request: AuditRequest, http_request: Request) -> AuditStatus:
         urls = request.target_urls()
         options = request.options.model_dump(mode="json")
         # Cache only single-URL requests. Multi-URL aggregate results
@@ -119,7 +128,9 @@ def create_app() -> FastAPI:
             cached = cache.get_cached_result(urls[0], options)
             if cached:
                 cached_job_id = cached.get("job_id")
-                if cached_job_id and database.get_audit_result(cached_job_id):
+                if cached_job_id and database.get_audit_result(
+                    cached_job_id, _owner(http_request)
+                ):
                     return AuditStatus(
                         job_id=cached_job_id,
                         status="completed",
@@ -129,7 +140,7 @@ def create_app() -> FastAPI:
 
         job_id = str(uuid.uuid4())
         now = time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())
-        database.create_job(job_id, urls[0], now)
+        database.create_job(job_id, urls[0], now, owner_key_id=_owner(http_request))
 
         try:
             from server.tasks import run_audit_task
@@ -160,39 +171,43 @@ def create_app() -> FastAPI:
         )
 
     @app.get("/audit/{job_id}", tags=["audit"])
-    def get_audit(job_id: str) -> dict:
-        result = database.get_audit_result(job_id)
+    def get_audit(job_id: str, http_request: Request) -> dict:
+        result = database.get_audit_result(job_id, _owner(http_request))
         if not result:
             raise HTTPException(404, "Audit not found")
         return result
 
     @app.get("/audit/{job_id}/html", response_class=HTMLResponse, tags=["audit"])
-    def get_audit_html(job_id: str) -> HTMLResponse:
+    def get_audit_html(job_id: str, http_request: Request) -> HTMLResponse:
         """Human-readable HTML report for a completed audit."""
-        result = database.get_audit_result(job_id)
+        result = database.get_audit_result(job_id, _owner(http_request))
         if not result:
             raise HTTPException(404, "Audit not found")
         template = jinja.get_template("report.html.j2")
         return HTMLResponse(template.render(audit=result))
 
     @app.get("/audit/{job_id}/vpat", tags=["audit"])
-    def get_audit_vpat(job_id: str, target_level: str = "AA") -> dict:
+    def get_audit_vpat(
+        job_id: str, http_request: Request, target_level: str = "AA"
+    ) -> dict:
         """VPAT 2.5 / WCAG 2.2 conformance summary (JSON)."""
         from audit.vpat import build_vpat
         if target_level not in ("A", "AA", "AAA"):
             raise HTTPException(400, "target_level must be A, AA, or AAA")
-        result = database.get_audit_result(job_id)
+        result = database.get_audit_result(job_id, _owner(http_request))
         if not result:
             raise HTTPException(404, "Audit not found")
         return build_vpat(result, target_level=target_level)
 
     @app.get("/audit/{job_id}/vpat.html", response_class=HTMLResponse, tags=["audit"])
-    def get_audit_vpat_html(job_id: str, target_level: str = "AA") -> HTMLResponse:
+    def get_audit_vpat_html(
+        job_id: str, http_request: Request, target_level: str = "AA"
+    ) -> HTMLResponse:
         """Stakeholder-facing VPAT rendered as standalone HTML."""
         from audit.vpat import render_vpat_html
         if target_level not in ("A", "AA", "AAA"):
             raise HTTPException(400, "target_level must be A, AA, or AAA")
-        result = database.get_audit_result(job_id)
+        result = database.get_audit_result(job_id, _owner(http_request))
         if not result:
             raise HTTPException(404, "Audit not found")
         return HTMLResponse(render_vpat_html(result, target_level=target_level))
@@ -200,6 +215,7 @@ def create_app() -> FastAPI:
     @app.get("/audit/{job_id}/xlsx", tags=["audit"])
     def get_audit_xlsx(
         job_id: str,
+        http_request: Request,
         target_level: str = "AA",
         enrich: bool = False,
     ):
@@ -218,7 +234,7 @@ def create_app() -> FastAPI:
 
         if target_level not in ("A", "AA", "AAA"):
             raise HTTPException(400, "target_level must be A, AA, or AAA")
-        result = database.get_audit_result(job_id)
+        result = database.get_audit_result(job_id, _owner(http_request))
         if not result:
             raise HTTPException(404, "Audit not found")
 
@@ -244,8 +260,8 @@ def create_app() -> FastAPI:
         )
 
     @app.delete("/audit/{job_id}", tags=["audit"])
-    def delete_audit(job_id: str) -> dict:
-        if not database.delete_audit_result(job_id):
+    def delete_audit(job_id: str, http_request: Request) -> dict:
+        if not database.delete_audit_result(job_id, _owner(http_request)):
             raise HTTPException(404, "Audit not found")
         return {"deleted": job_id}
 

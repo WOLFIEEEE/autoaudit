@@ -27,9 +27,17 @@ HTML need to map the snippet back to the template file. That's why
 the rule emits a CONTEXT-style patch (the snippet shows up as the
 `-`/`+` block) rather than touching files directly.
 
-`generate_patches(audit_result)` returns a list of patch hunks.
-`scripts/apply_audit_fixes.py` (TODO: separate companion script) can
-batch-apply them; this module just produces the data.
+`generate_patches(audit_result)` returns a list of patch hunks. This
+module only produces the data — there is deliberately no applier.
+
+The patches are CONTEXT-style on purpose: they are anchored to a
+captured `html_snippet` and a best-effort cssPath, not to a file and a
+line number. In any repo that renders its HTML from templates the
+snippet does not correspond to a source file at all, so an applier
+would have to guess which template produced it. Piping these hunks at
+`git apply` against a real codebase is therefore unsafe by
+construction; feed them to a human or to a codemod that knows the
+template layer.
 """
 
 from __future__ import annotations

@@ -24,6 +24,17 @@ from audit._issue import make_issue
 # Inputs that should carry autocomplete per WCAG 1.3.5 (AA).
 # Keyed off input type OR name/id substring match.
 AUTOCOMPLETE_TYPES = {"email", "tel", "password"}
+
+# Input types that can never carry a meaningful autocomplete token. The
+# WCAG 1.3.5 token list covers text-entry and selection of the user's own
+# data; a radio group, a checkbox or a button collects no such value.
+# Without this gate the name/id substring match below fires on anything
+# incidentally named — a radio with id="pref-email" was reported as a
+# personal-data field missing autocomplete.
+AUTOCOMPLETE_INELIGIBLE_TYPES = frozenset({
+    "radio", "checkbox", "button", "submit", "reset", "image",
+    "file", "hidden", "range", "color",
+})
 AUTOCOMPLETE_NAME_SUBSTRINGS = (
     "email",
     "phone",
@@ -210,6 +221,8 @@ _EXTRACT_JS = r"""
 
 def _needs_autocomplete(control: dict[str, Any]) -> bool:
     t = (control.get("type") or "").lower()
+    if t in AUTOCOMPLETE_INELIGIBLE_TYPES:
+        return False
     if t in AUTOCOMPLETE_TYPES:
         return True
     needle = f"{control.get('name','')} {control.get('id','')}".lower()

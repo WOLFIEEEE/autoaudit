@@ -36,6 +36,7 @@ import logging
 from pathlib import Path
 from typing import Any
 
+from audit._fingerprint import stable_short_id
 from audit._issue import make_issue
 from audit._js_helpers import CSS_PATH_JS
 
@@ -146,7 +147,7 @@ def run(page, rules: list[dict[str, Any]]) -> list[dict[str, Any]]:
             continue
         issues.append(
             make_issue(
-                issue_id=f"{r['id']}-{hash(hit['selector']) & 0xFFFFFF:x}",
+                issue_id=f"{r['id']}-{stable_short_id(hit['selector'])}",
                 module="yaml_rules",
                 rule=r["id"],
                 severity=r["severity"],

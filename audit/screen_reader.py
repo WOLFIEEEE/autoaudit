@@ -5,9 +5,27 @@ the same tree that screen readers consume via UIA/AT-SPI/IAccessible2 before
 applying their own verbosity rules. Catches the canonical "silent element"
 class of issues without needing a real screen reader running.
 
-Path B (deferred): Real NVDA speech capture on a Windows worker. The
-NVDAController class below is the placeholder entry point; see the project
-design doc for the add-on and worker architecture.
+Path B (implemented, Windows-only): Real NVDA speech capture on a Windows
+worker, via `NVDAController` below. NVDA is launched against a private
+config directory with logging at DEBUG, and speech is recovered by
+parsing the `Speaking [...]` entries it writes to that log — no add-on
+to install. See docs/windows_worker.md for setup.
+
+Two constraints follow from how NVDA works, and both are load-bearing:
+
+- **Headful and foreground.** NVDA only reads the focused window, so the
+  browser cannot be headless and nothing else may steal focus mid-run.
+- **Browse mode needs OS-level input.** NVDA implements browse-mode
+  navigation inside a low-level Windows keyboard hook. CDP-injected keys
+  never traverse that hook, so browse-mode keys go through SendInput
+  (audit/_win_input.py). When that is unavailable the walk captures
+  nothing, and `run_browse_mode` reports a skip rather than letting the
+  analyzer read an empty transcript as "the page hid all its text".
+
+The log format is an internal NVDA detail with no stability contract;
+tests/test_nvda_log_canary.py pins the parser against a captured
+excerpt so a format change fails loudly instead of silently yielding
+no speech.
 
 Rules implemented (Path A):
 - sr-silent-interactive     WCAG 4.1.2  critical   interactive-role node has no accessible name
@@ -37,6 +55,8 @@ import time
 from pathlib import Path
 from typing import Any
 
+from audit import _win_input
+from audit._fingerprint import stable_short_id
 from audit._issue import make_issue
 
 log = logging.getLogger(__name__)
@@ -963,15 +983,43 @@ class NVDAController:
         except Exception:
             pass
 
+        # Browse-mode navigation is implemented inside NVDA's low-level
+        # keyboard hook, which CDP-injected keys never reach — Blink would
+        # just scroll and NVDA would stay silent. Deliver these through the
+        # OS input queue instead. The CDP path is kept as a fallback so the
+        # code runs everywhere; when it is taken the walk captures nothing
+        # and the caller reports a skip rather than inventing findings.
+        use_os_input = _win_input.available()
+        if use_os_input:
+            try:
+                # SendInput targets the foreground window, so the browser
+                # has to own it before we start typing.
+                page.bring_to_front()
+            except Exception:
+                log.debug("bring_to_front failed; SendInput may go elsewhere")
+
+        delivery = "os_input" if use_os_input else "cdp"
+
+        def _press(vk: int, cdp_key: str) -> None:
+            nonlocal delivery
+            if use_os_input and _win_input.send_key(vk):
+                return
+            if use_os_input:
+                # SendInput was available but refused this event (UIPI, or
+                # a higher-integrity foreground window). Record the
+                # downgrade so the skip reason stays truthful.
+                delivery = "cdp_fallback"
+            page.keyboard.press(cdp_key)
+
         self.start_capture()
-        # Home: move to top of document in browse mode.
-        page.keyboard.press("Home")
+        # Home: move NVDA's virtual cursor to the top of the document.
+        _press(_win_input.VK_HOME, "Home")
         time.sleep(self.BROWSE_MODE_STEP_WAIT)
 
         last_size = 0
         stall = 0
         for _ in range(self.BROWSE_MODE_MAX_STEPS):
-            page.keyboard.press("ArrowDown")
+            _press(_win_input.VK_DOWN, "ArrowDown")
             time.sleep(self.BROWSE_MODE_STEP_WAIT)
             # Cheap progress probe: has the log grown?
             try:
@@ -992,11 +1040,47 @@ class NVDAController:
         timed = _parse_log_speech_timed(captured)
         utterances = [t for _ts, t in timed]
 
+        if not utterances:
+            # Surface the degenerate walk explicitly rather than handing
+            # an empty transcript to the analyzer. See analyze_browse_mode
+            # for why an empty transcript must never be read as "the page
+            # hid all of its text".
+            log.warning(
+                "browse-mode walk captured no NVDA speech (%d bytes of log); "
+                "browse-mode rules not evaluated",
+                len(captured),
+            )
+            if delivery == "os_input":
+                why = (
+                    "Keys were delivered through the OS input queue, so NVDA "
+                    "should have seen them — it was most likely asleep, muted, "
+                    "or reading a window other than the browser."
+                )
+            else:
+                why = (
+                    "Keys were delivered over CDP, which bypasses NVDA's "
+                    "low-level keyboard hook, so NVDA never saw them. Browse "
+                    "mode requires a Windows worker with OS-level input."
+                )
+            return {
+                "ran": True,
+                "utterances": [],
+                "visible_text_nodes": visible_nodes,
+                "log_bytes": len(captured),
+                "key_delivery": delivery,
+                "skipped_analysis": True,
+                "skip_reason": (
+                    f"NVDA captured no speech during the browse-mode walk. {why} "
+                    "Browse-mode rules were not evaluated; Path A rules still apply."
+                ),
+            }
+
         return {
             "ran": True,
             "utterances": utterances,
             "visible_text_nodes": visible_nodes,
             "log_bytes": len(captured),
+            "key_delivery": delivery,
         }
 
     def analyze_results(self, tab_stops: list[dict[str, Any]]) -> dict[str, Any]:
@@ -1208,6 +1292,22 @@ def analyze_browse_mode(browse_result: dict[str, Any]) -> list[dict[str, Any]]:
     if not nodes:
         return issues
 
+    if not utterances:
+        # NVDA produced no speech at all during the browse walk. We cannot
+        # tell "this page hides every bit of its text from the screen
+        # reader" apart from "the browse-mode keystrokes never reached
+        # NVDA" — the latter happens when NVDA is asleep, when another
+        # window owns focus, or when the Down-arrow presses were injected
+        # through CDP rather than the OS input queue (CDP keys bypass
+        # NVDA's low-level keyboard hook entirely).
+        #
+        # Without this guard `spoken_corpus` is empty, every visible text
+        # node misses the substring test, and a perfectly clean page
+        # reports 20 "serious" skipped-text failures. Staying silent and
+        # letting the caller record the skip is the honest behaviour, and
+        # mirrors the tab-walk guard in NVDAController.analyze_results.
+        return issues
+
     # Build one big lowercase corpus of everything NVDA said. Using a
     # single string (rather than scanning every utterance per node)
     # keeps the complexity at O(nodes) instead of O(nodes * utterances).
@@ -1234,7 +1334,7 @@ def analyze_browse_mode(browse_result: dict[str, Any]) -> list[dict[str, Any]]:
             if norm_txt in spoken_corpus:
                 issues.append(
                     make_issue(
-                        issue_id=f"sr-browse-decorative-noise-{hash(txt) & 0xFFFFFF:x}",
+                        issue_id=f"sr-browse-decorative-noise-{stable_short_id(txt)}",
                         module="screen_reader",
                         rule="sr-browse-decorative-noise",
                         severity="moderate",
@@ -1263,7 +1363,7 @@ def analyze_browse_mode(browse_result: dict[str, Any]) -> list[dict[str, Any]]:
             skipped_count += 1
             issues.append(
                 make_issue(
-                    issue_id=f"sr-browse-skipped-text-{hash(txt) & 0xFFFFFF:x}",
+                    issue_id=f"sr-browse-skipped-text-{stable_short_id(txt)}",
                     module="screen_reader",
                     rule="sr-browse-skipped-text",
                     severity="serious",

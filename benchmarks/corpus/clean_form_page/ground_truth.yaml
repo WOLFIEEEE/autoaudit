@@ -1,0 +1,134 @@
+notes: |
+  A deliberately accessible signup form: labelled inputs, autocomplete
+  tokens, a fieldset for the radio group, a skip link, landmarks, a
+  visible focus indicator, 44px targets, and reduced-motion /
+  forced-colors / prefers-contrast queries.
+
+  ANY finding here is a false positive by definition. That is the whole
+  job of this fixture — it needs no human labelling and it is the
+  cheapest false-positive detector we have.
+
+  The forbidden list is every rule belonging to a module that actually
+  executed against this page (109 of them), not every rule in the
+  codebase: a rule that cannot fire here is not evidence of anything and
+  padding the list would inflate the negative-coverage metric.
+
+  Two genuine false positives were found and fixed when this fixture was
+  written:
+    - forms-missing-autocomplete fired on a radio button whose id merely
+      contained "email" (id="pref-email"). Radios carry no autocomplete
+      token; _needs_autocomplete now gates on input type first.
+    - sr-label-in-name fired on a correctly labelled <select> because the
+      focus probe took innerText (the OPTION text) as the visible label.
+      Form controls now resolve through their <label>.
+expected: []
+forbidden:
+  - rule: <dynamically
+  - rule: computed>
+  - rule: accessible-auth-captcha-detected
+  - rule: accessible-auth-cognitive-test
+  - rule: aria-describedby-missing
+  - rule: aria-hidden-focusable
+  - rule: aria-invalid-role
+  - rule: aria-labelledby-missing
+  - rule: carousel-auto-advance
+  - rule: carousel-change-not-announced
+  - rule: carousel-control-not-keyboard
+  - rule: carousel-control-undersized
+  - rule: carousel-region-no-name
+  - rule: char-key-shortcut-accesskey
+  - rule: char-key-shortcut-single-key-handler
+  - rule: cognitive-duplicate-link-text
+  - rule: cognitive-empty-link
+  - rule: cognitive-generic-link-text
+  - rule: cognitive-reading-level-high
+  - rule: color-only-inline-marker
+  - rule: color-only-link
+  - rule: disclosure-missing-expanded-state
+  - rule: dragging-handler-on-element
+  - rule: dragging-no-keyboard-alt
+  - rule: forms-aria-invalid-no-description
+  - rule: forms-autocomplete-on-off
+  - rule: forms-autocomplete-unknown-token
+  - rule: forms-error-not-descriptive
+  - rule: forms-input-no-label
+  - rule: forms-missing-autocomplete
+  - rule: forms-no-review-step
+  - rule: forms-radio-group-no-fieldset
+  - rule: hover-disappears-on-hover
+  - rule: hover-not-dismissible
+  - rule: keyboard-generic-focusable
+  - rule: keyboard-inoperable-control
+  - rule: keyboard-no-accessible-name
+  - rule: keyboard-no-focus-indicator
+  - rule: keyboard-positive-tabindex
+  - rule: keyboard-trap-suspected
+  - rule: live-region-empty-on-load
+  - rule: live-region-role-conflict
+  - rule: live-region-silenced
+  - rule: media-autoplay
+  - rule: media-img-decorative-text
+  - rule: media-img-no-alt
+  - rule: media-img-placeholder-alt
+  - rule: media-video-no-track
+  - rule: menu-focus-not-trapped
+  - rule: mobile-drag-only
+  - rule: mobile-motion-actuation
+  - rule: mobile-orientation-locked
+  - rule: mobile-pointer-gesture
+  - rule: preferences-no-forced-colors-query
+  - rule: preferences-no-reduced-motion-query
+  - rule: preferences-reduced-motion-ignored
+  - rule: redundant-entry-no-autocomplete
+  - rule: reflow-element-exceeds
+  - rule: reflow-horizontal-scroll
+  - rule: reflow-overflow-clipped
+  - rule: responsive-target-size
+  - rule: responsive-viewport-meta-missing
+  - rule: responsive-viewport-zoom-disabled
+  - rule: reveal-control-unnamed
+  - rule: reveal-undersized-target
+  - rule: skiplink-broken
+  - rule: skiplink-missing
+  - rule: skiplink-target-missing
+  - rule: skiplink-target-not-focusable
+  - rule: sr-browse-decorative-noise
+  - rule: sr-browse-skipped-text
+  - rule: sr-dialog-no-name
+  - rule: sr-duplicate-landmark
+  - rule: sr-empty-heading
+  - rule: sr-label-in-name
+  - rule: sr-nvda-mismatch
+  - rule: sr-nvda-silent
+  - rule: sr-silent-interactive
+  - rule: structure-duplicate-heading
+  - rule: structure-heading-skip
+  - rule: structure-html-lang
+  - rule: structure-iframe-no-title
+  - rule: structure-iframe-title-generic
+  - rule: structure-lang-content-mismatch
+  - rule: structure-lang-of-parts
+  - rule: structure-multiple-h1
+  - rule: structure-no-h1
+  - rule: structure-no-main
+  - rule: structure-table-no-th
+  - rule: structure-title-generic
+  - rule: structure-title-missing
+  - rule: structure-title-too-short
+  - rule: submenu-keyboard-inaccessible
+  - rule: visual-autoplay-sound
+  - rule: visual-carousel-no-pause
+  - rule: visual-infinite-animation
+  - rule: visual-marquee-or-blink
+  - rule: visual-tiny-text
+  - rule: widget-combobox-missing-controls
+  - rule: widget-combobox-missing-expanded
+  - rule: widget-dialog-missing-aria-modal
+  - rule: widget-dialog-missing-name
+  - rule: widget-dialog-no-escape
+  - rule: widget-disclosure-missing-expanded
+  - rule: widget-tab-missing-controls
+  - rule: widget-tab-missing-selected
+  - rule: widget-tablist-no-arrow-nav
+  - rule: widget-tablist-no-tabs
+  - rule: widget-visual-tablist-suspect

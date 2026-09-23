@@ -1,0 +1,14 @@
+INFO - __main__ (23:26:00.004) - MainThread (49080):
+Starting NVDA version 2024.4.1
+IO - speech.speech.speak (23:26:01.118) - MainThread (49080):
+Speaking [LangChangeCommand ('en_US'), 'Place order', 'button']
+IO - inputCore.InputManager.executeGesture (23:26:01.402) - MainThread (49080):
+Input: kb(desktop):tab
+IO - speech.speech.speak (23:26:01.556) - MainThread (49080):
+Speaking ['Email address', 'edit', 'blank']
+IO - speech.speech.speak (23:26:02.031) - MainThread (49080):
+Speaking [LangChangeCommand ('en'), "Terms and conditions, it's required", 'link']
+DEBUG - core.main (23:26:02.500) - MainThread (49080):
+Should not be parsed as speech
+IO - speech.speech.speak (23:26:03.114) - MainThread (49080):
+Speaking ['heading level 2', 'Delivery options']

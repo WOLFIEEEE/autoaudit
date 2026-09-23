@@ -5,10 +5,10 @@ Scoped to rules that work off static DOM / layout geometry:
 - responsive-viewport-zoom-disabled   WCAG 1.4.4          serious   viewport meta disables user zoom
 - responsive-target-size              WCAG 2.5.8 (2.2 AA) moderate  interactive target < 24x24 CSS pixels
 
-The plan's reflow-at-320px and text-spacing-override rules are intentionally
-deferred: they need real page manipulation (resize, CSS injection, overflow
-detection) and are prone to false positives when run as a static snapshot.
-They'll land behind a separate interactive-checks pass.
+Reflow at 320px moved into audit/reflow.py, which does the real page
+manipulation (viewport resize + overflow detection) this module
+deliberately avoids. The text-spacing-override rule (1.4.12) is still
+outstanding; it needs CSS injection plus clipping detection.
 """
 
 from __future__ import annotations

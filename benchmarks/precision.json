@@ -1,0 +1,70 @@
+{
+  "measured_over_fixtures": 13,
+  "rules": {
+    "carousel-auto-advance": {
+      "fp": 0,
+      "precision": 1.0,
+      "tp": 2
+    },
+    "carousel-change-not-announced": {
+      "fp": 0,
+      "precision": 1.0,
+      "tp": 1
+    },
+    "char-key-shortcut-accesskey": {
+      "fp": 0,
+      "precision": 1.0,
+      "tp": 1
+    },
+    "disclosure-missing-expanded-state": {
+      "fp": 0,
+      "precision": 1.0,
+      "tp": 1
+    },
+    "fake-button-anchor-no-href": {
+      "fp": 0,
+      "precision": 1.0,
+      "tp": 1
+    },
+    "fake-button-noninteractive": {
+      "fp": 0,
+      "precision": 1.0,
+      "tp": 1
+    },
+    "keyboard-inoperable-control": {
+      "fp": 0,
+      "precision": 1.0,
+      "tp": 1
+    },
+    "keyboard-no-accessible-name": {
+      "fp": 0,
+      "precision": 1.0,
+      "tp": 1
+    },
+    "menu-focus-not-trapped": {
+      "fp": 0,
+      "precision": 1.0,
+      "tp": 1
+    },
+    "sr-label-in-name": {
+      "fp": 0,
+      "precision": 1.0,
+      "tp": 1
+    },
+    "sr-silent-interactive": {
+      "fp": 0,
+      "precision": 1.0,
+      "tp": 1
+    },
+    "submenu-keyboard-inaccessible": {
+      "fp": 0,
+      "precision": 1.0,
+      "tp": 1
+    },
+    "timing-meta-refresh": {
+      "fp": 0,
+      "precision": 1.0,
+      "tp": 1
+    }
+  }
+}

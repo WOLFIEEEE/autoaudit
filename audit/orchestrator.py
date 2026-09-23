@@ -50,6 +50,7 @@ from audit import (
     wcag_engine,
     widgets,
 )
+from audit import confidence as _confidence
 from audit._fingerprint import fingerprint_for_issue
 from audit.rule_versions import (
     RULE_SET_META_VERSION,
@@ -111,6 +112,26 @@ class AuditOrchestrator:
         # Keyed by URL; populated in `_audit_one`.
         self._snapshots: dict[str, dict[str, Any]] = {}
 
+
+    def _apply_confidence_tiering(
+        self, issues: list[dict[str, Any]]
+    ) -> list[dict[str, Any]]:
+        """Cap reported confidence at what the benchmark corpus supports.
+
+        Off by default. `confidence` is a score multiplier, and with only
+        a fraction of the rule set measured, switching this on would
+        demote most rules to `low` and inflate every score — a worse
+        answer than the declared values.
+
+        Turn it on (`options["confidence_tiering"] = True`) once positive
+        corpus coverage is broad enough that an unmeasured rule is the
+        exception. Until then it is available for anyone who would rather
+        understate confidence than assert it without evidence.
+        """
+        if not self.options.get("confidence_tiering"):
+            return issues
+        return _confidence.apply_to_issues(issues)
+
     def _resolve_skip_nvda(self) -> bool:
         explicit = self.options.get("skip_nvda")
         if explicit is None:
@@ -135,6 +156,7 @@ class AuditOrchestrator:
                 if self.options.get("screenshots"):
                     from audit import screenshots as _shots
                     _shots.annotate_issues(page, all_issues)
+            all_issues = self._apply_confidence_tiering(all_issues)
             summary = calculate_scores(all_issues)
             return {
                 "url": self.urls[0],
@@ -204,6 +226,7 @@ class AuditOrchestrator:
                     issue["id"] = f"{target}|{issue['id']}"
                     aggregated_issues.append(issue)
 
+                per_page_issues = self._apply_confidence_tiering(per_page_issues)
                 page_summary = calculate_scores(per_page_issues)
                 page_modules = self._module_summaries()
                 pages_out.append(
@@ -254,6 +277,7 @@ class AuditOrchestrator:
         aggregated_issues = deduplicate_issues(aggregated_issues)
         rank = {"critical": 0, "serious": 1, "moderate": 2, "minor": 3}
         aggregated_issues.sort(key=lambda i: rank.get(i.get("severity", "minor"), 4))
+        aggregated_issues = self._apply_confidence_tiering(aggregated_issues)
         aggregated_summary = calculate_scores(aggregated_issues)
 
         nvda_status = "pending" if any_nvda_pending else self._initial_nvda_status()
@@ -880,14 +904,20 @@ def run_nvda_follow_up(url: str, options: dict[str, Any]) -> dict[str, Any]:
             try:
                 browse = nvda.run_browse_mode(page)
                 browse_issues = screen_reader.analyze_browse_mode(browse)
-                nvda_result.setdefault("browse_mode", {}).update(
-                    {
-                        "ran": browse.get("ran", False),
-                        "utterances": len(browse.get("utterances") or []),
-                        "visible_nodes": len(browse.get("visible_text_nodes") or []),
-                        "log_bytes": browse.get("log_bytes", 0),
-                    }
-                )
+                browse_meta = {
+                    "ran": browse.get("ran", False),
+                    "utterances": len(browse.get("utterances") or []),
+                    "visible_nodes": len(browse.get("visible_text_nodes") or []),
+                    "log_bytes": browse.get("log_bytes", 0),
+                    "key_delivery": browse.get("key_delivery", "unknown"),
+                }
+                # A degenerate walk (no speech captured) yields no issues
+                # by design. Report *why* so a clean browse_mode block is
+                # never mistaken for "browse-mode rules passed".
+                if browse.get("skipped_analysis"):
+                    browse_meta["skipped_analysis"] = True
+                    browse_meta["skip_reason"] = browse.get("skip_reason", "")
+                nvda_result.setdefault("browse_mode", {}).update(browse_meta)
                 # Append issues so both tab-walk and browse-mode rules
                 # flow through the same dedup / scoring pass.
                 nvda_result.setdefault("issues", []).extend(browse_issues)

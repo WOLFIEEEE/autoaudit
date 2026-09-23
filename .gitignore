@@ -18,3 +18,6 @@ build/
 .vscode/
 vendor/axe.min.js
 data/
+
+# Audit run artifacts — real scan output, not source.
+out/

@@ -1,0 +1,73 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Create your account — Northwind</title>
+  <style>
+    :root { color-scheme: light; }
+    body { font: 16px/1.5 system-ui, sans-serif; color: #111; background: #fff; margin: 0; }
+    .skip { position: absolute; left: -9999px; }
+    .skip:focus { left: 8px; top: 8px; background: #fff; padding: 8px; }
+    main { max-width: 40rem; padding: 1.5rem; }
+    label { display: block; margin-top: 1rem; font-weight: 600; }
+    input:not([type=radio]):not([type=checkbox]), select {
+      font: inherit; padding: .5rem; width: 100%; box-sizing: border-box;
+      border: 1px solid #595959; border-radius: 4px; }
+    input[type=radio] { width: 24px; height: 24px; margin: 0 .5rem 0 0; }
+    fieldset label { display: flex; align-items: center; min-height: 44px; margin-top: .25rem; }
+    .hint { color: #595959; font-size: .9rem; }
+    nav a { display: inline-block; padding: .75rem 1rem; min-height: 44px;
+            min-width: 44px; box-sizing: border-box; color: #1a4fa0; }
+    button { font: inherit; margin-top: 1.5rem; min-height: 44px; min-width: 44px;
+             padding: .6rem 1.2rem; background: #1a4fa0; color: #fff;
+             border: 1px solid #1a4fa0; border-radius: 4px; }
+    :focus-visible { outline: 3px solid #b35c00; outline-offset: 2px; }
+    @media (prefers-reduced-motion: reduce) { * { animation: none !important; transition: none !important; } }
+    @media (prefers-contrast: more) { body { color: #000; } }
+    @media (forced-colors: active) { button { border: 1px solid ButtonText; } }
+  </style>
+</head>
+<body>
+  <a class="skip" href="#main">Skip to main content</a>
+  <header>
+    <nav aria-label="Primary">
+      <a href="/">Home</a>
+      <a href="/help">Help</a>
+    </nav>
+  </header>
+  <main id="main" tabindex="-1">
+    <h1>Create your account</h1>
+    <form action="/signup" method="post">
+      <label for="full-name">Full name</label>
+      <input id="full-name" name="full-name" type="text" autocomplete="name">
+
+      <label for="email">Email address</label>
+      <input id="email" name="email" type="email" autocomplete="email"
+             aria-describedby="email-hint">
+      <p id="email-hint" class="hint">We use this to send your receipt.</p>
+
+      <label for="tel">Phone number</label>
+      <input id="tel" name="tel" type="tel" autocomplete="tel">
+
+      <label for="country">Country</label>
+      <select id="country" name="country" autocomplete="country-name">
+        <option value="gb">United Kingdom</option>
+        <option value="in">India</option>
+        <option value="us">United States</option>
+      </select>
+
+      <fieldset>
+        <legend>Contact preference</legend>
+        <label for="pref-email"><input id="pref-email" type="radio" name="pref" value="email" checked> Email</label>
+        <label for="pref-phone"><input id="pref-phone" type="radio" name="pref" value="phone"> Phone</label>
+      </fieldset>
+
+      <button type="submit">Create account</button>
+    </form>
+  </main>
+  <footer>
+    <p>Northwind Ltd</p>
+  </footer>
+</body>
+</html>

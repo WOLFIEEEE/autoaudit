@@ -127,6 +127,22 @@ def run(page, options: dict[str, Any] | None = None) -> dict[str, Any]:  # noqa:
         log.exception("skiplinks discovery failed")
         return {
             "ran": False, "error": str(exc), "issues": [],
+            "skip_reason": f"skip-link discovery raised: {exc}",
+            "duration_seconds": round(time.time() - start, 3),
+        }
+
+    if not isinstance(candidates, list):
+        # The probe returned something that is not a list of candidates,
+        # so it did not run properly. "We looked and there is no skip
+        # link" and "we could not look" are different answers, and only
+        # the first is a finding — collapsing them here is how a failed
+        # probe turns into a confident skiplink-missing on every page.
+        return {
+            "ran": False, "issues": [],
+            "skip_reason": (
+                "skip-link discovery returned no candidate list; the page "
+                "was not evaluated for skip links."
+            ),
             "duration_seconds": round(time.time() - start, 3),
         }
 

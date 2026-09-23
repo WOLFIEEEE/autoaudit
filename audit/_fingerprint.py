@@ -111,6 +111,22 @@ def issue_fingerprint(
     ).hexdigest()[:16]
 
 
+def stable_short_id(*parts: str, length: int = 8) -> str:
+    """Deterministic short hex id built from arbitrary string parts.
+
+    Python salts `hash()` for str per process (PYTHONHASHSEED), so an id
+    like f"rule-{hash(text) & 0xFFFFFF:x}" changes on every run. Anything
+    keying on `issue_id` — DB rows, an external tracker sync — then sees
+    the same finding as brand new on each audit and duplicates it. Use
+    this instead wherever an id is derived from content rather than from
+    a selector (for a selector, prefer `issue_fingerprint`).
+    """
+    basis = "|".join(p or "" for p in parts)
+    return hashlib.sha1(
+        basis.encode("utf-8", errors="ignore"), usedforsecurity=False
+    ).hexdigest()[:length]
+
+
 def fingerprint_for_issue(issue: dict[str, Any], page_url: str | None = None) -> str:
     """Convenience wrapper that reads the usual issue-dict fields."""
     el = issue.get("element") or {}

@@ -182,13 +182,43 @@ Two independent code paths with a stable merge point.
 
 Runs on any platform. No external dependencies. Catches the canonical "silent element" class of problems.
 
-### Path B — real NVDA (deferred)
+### Path B — real NVDA (implemented, Windows-only)
 
-When it lands, it will be a Windows-only overlay:
+A Windows-only overlay on top of Path A:
 
-1. An NVDA add-on (`nvda_addon/globalPlugins/speechCapture.py`) overrides `speech.speak()` to write every announcement to a capture channel, timestamped.
-2. A Python `NVDAController` on the worker starts NVDA if needed, opens the channel, drives Playwright headfully (NVDA only reads the focused window), and synchronizes Tab presses with channel reads.
-3. Each `{tab_index, focused_selector, nvda_said}` tuple feeds an analyzer that emits additional rules the a11y tree can't catch: `nvda-silent-element` (tree says named, NVDA said nothing), `nvda-announced-as-clickable` (unsemantic interactive element), `nvda-read-order-mismatch` (browse-mode reading order differs from visual order).
+1. `NVDAController` launches NVDA against a private config directory
+   (welcome dialog, usage-stats prompt and update check pre-disabled)
+   with `--log-level=12`, and recovers speech by parsing the
+   `Speaking [...]` entries NVDA writes to that log. **There is no NVDA
+   add-on** — an earlier design called for one at
+   `nvda_addon/globalPlugins/speechCapture.py`; log parsing replaced it
+   because it works against a stock NVDA install with nothing to build,
+   sign or deploy.
+2. Playwright drives the page headfully (NVDA only reads the focused
+   window) and the controller slices the log by byte offset around each
+   keystroke to attribute speech to a tab stop.
+3. Each `{tab_index, focused_selector, nvda_said}` tuple feeds an
+   analyzer emitting rules the a11y tree alone cannot produce:
+   `sr-nvda-silent` (tree says named, NVDA said nothing) and
+   `sr-nvda-mismatch` (spoken name diverges from the DOM name).
+4. A second browse-mode pass walks the page with Home/Down and emits
+   `sr-browse-skipped-text` and `sr-browse-decorative-noise`.
+
+**Input delivery.** Tab works over CDP: it moves focus in Blink, which
+fires a real accessibility event NVDA picks up through IAccessible2/UIA
+regardless of how the key was injected. Browse mode does **not** — NVDA
+implements it inside a low-level Windows keyboard hook that CDP-injected
+keys never reach. Those keys go through `SendInput`
+(`audit/_win_input.py`). Where OS-level input is unavailable the browse
+walk captures nothing and is reported as a skip; it never degrades into
+findings.
+
+**Parser fragility.** NVDA's log serializes speech with Python `repr()`,
+an internal detail with no stability contract. It can change in any
+release, and the failure mode is silence rather than an exception.
+`tests/test_nvda_log_canary.py` pins the parser to a captured excerpt
+from the version recorded in `docs/windows_worker.md`; when NVDA is
+upgraded, re-capture the fixture and update the pin.
 
 ### Merge point
 

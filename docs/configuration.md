@@ -150,4 +150,19 @@ $env:SKIP_NVDA = "false"
 python scripts\run_worker.py
 ```
 
-Path B is not yet implemented. When it lands, this doc will gain a **queue routing** section — the API will send `skip_nvda=false` jobs to a dedicated `audit.nvda` queue that only the Windows worker subscribes to. See [docs/architecture.md](architecture.md#path-b-real-nvda-worker) for the design.
+**Queue routing.** Path B ships. `audit.run_nvda` is routed to a dedicated
+`nvda` queue (see `celery_app.py`); everything else stays on `default`. A
+worker picks its queues with `CELERY_QUEUES`:
+
+| Host | `CELERY_QUEUES` | Runs |
+|---|---|---|
+| Linux worker | `default` (the default) | Path A + every automated module |
+| Windows worker | `nvda` | Path B only, as a follow-up task |
+| Single-box dev | `default,nvda` | Both |
+
+NVDA messages carry a TTL, so if no Windows worker is online the job
+expires rather than accumulating in Redis. Until one picks the job up,
+the audit is readable with `nvda_status="pending"`.
+
+See [docs/windows_worker.md](windows_worker.md) for the Windows setup and
+[docs/architecture.md](architecture.md) for the design.

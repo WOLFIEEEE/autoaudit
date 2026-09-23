@@ -244,7 +244,7 @@ Returns a simple liveness check plus platform metadata so clients can detect whe
 |---------------------|--------|-------|
 | `status`            | string | Always `"ok"` when the process is up |
 | `platform`          | string | `platform.system()` — `Linux`, `Darwin`, `Windows` |
-| `nvda_capable`      | bool   | `true` only on Windows and when the NVDA add-on is installed (currently always mirrors platform check; Path B not yet implemented) |
+| `nvda_capable`      | bool   | `true` on Windows, where Path B (real NVDA) can run. Reflects the platform check only — it does not probe for an NVDA install, so a Windows host without NVDA still reports `true` and the audit surfaces the failure per-run via `nvda_status` / `skip_reason`. |
 | `skip_nvda_default` | bool   | Default value for `options.skip_nvda` on this instance |
 
 **Status codes:**

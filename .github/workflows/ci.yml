@@ -4,6 +4,7 @@ on:
   push:
     branches: ["**"]
   pull_request:
+  workflow_dispatch:
 
 concurrency:
   group: ci-${{ github.ref }}
@@ -32,6 +33,7 @@ jobs:
           ruff check audit server scripts tests benchmarks main.py celery_app.py
           bandit -q -r audit server scripts -x tests -ll
           python scripts/gen_rules_reference.py --check
+          python scripts/fixture_coverage.py --check
 
       - name: Audit Python dependencies
         run: pip-audit -r requirements.txt
@@ -41,7 +43,7 @@ jobs:
         # in the separate `e2e` job.
         run: |
           coverage run --source=audit,server -m pytest -m "not slow" -q
-          coverage report --fail-under=50
+          coverage report --fail-under=57
 
   e2e:
     name: End-to-end (Playwright + axe-core)
@@ -69,3 +71,65 @@ jobs:
 
       - name: Run e2e tests
         run: pytest -m slow -q
+
+      - name: Benchmark corpus (precision / recall)
+        # The clean-page fixtures are the false-positive detector: any
+        # finding on them fails the build.
+        run: python benchmarks/run_benchmark.py
+
+  windows-unit:
+    name: Unit tests on Windows
+    runs-on: windows-latest
+    # Path B code is Windows-only. Even without NVDA installed, running
+    # the suite here compiles the ctypes structures in audit/_win_input
+    # and exercises every platform branch the Linux jobs skip entirely.
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: pip
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements-dev.txt
+
+      - name: Run fast tests
+        run: pytest -m "not slow" -q
+
+  nvda-path-b:
+    name: Path B (real NVDA)
+    # Requires a SELF-HOSTED Windows runner with NVDA installed and
+    # scripts/setup_nvda_task.ps1 already run as admin. GitHub-hosted
+    # Windows runners cannot host NVDA: no audio device, and nvda.exe
+    # ships a requireAdministrator manifest. See docs/windows_worker.md.
+    #
+    # Manual only — this job speaks out loud and needs exclusive
+    # ownership of the desktop's foreground window, so it cannot run
+    # concurrently with anything else on that machine.
+    if: github.event_name == 'workflow_dispatch'
+    runs-on: [self-hosted, windows, nvda]
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements-dev.txt
+
+      - name: Install Chromium via Playwright
+        run: playwright install chromium
+
+      - name: Vendor axe-core
+        run: python scripts/fetch_axe.py
+
+      - name: NVDA smoke test (launch, tab-walk, capture speech)
+        run: python scripts/smoke_test_nvda.py
+
+      - name: Verify NVDA rules against the stress page
+        run: python scripts/verify_nvda_rules.py
+
+      - name: Benchmark corpus (precision / recall, incl. browse-mode guards)
+        run: python benchmarks/run_benchmark.py

@@ -17,3 +17,11 @@ forbidden:
   - rule: aria-invalid-role
   - rule: aria-labelledby-missing
   - rule: aria-describedby-missing
+  # Browse-mode rules compare NVDA's transcript against visible DOM text.
+  # If the browse walk degenerates (keystrokes never reach NVDA, NVDA
+  # asleep, focus stolen) the transcript is empty and EVERY text node
+  # looks unspoken — which turned this clean fixture into 20 "serious"
+  # failures. analyze_browse_mode must stay silent on an empty
+  # transcript, so neither rule may ever fire here.
+  - rule: sr-browse-skipped-text
+  - rule: sr-browse-decorative-noise

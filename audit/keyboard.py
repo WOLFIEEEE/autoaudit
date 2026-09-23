@@ -140,7 +140,17 @@ _FOCUS_PROBE_JS = r"""
     // so `aria-hidden` children are still counted (they're visible to
     // sighted users even though SR ignores them — that's the whole
     // point of WCAG 2.5.3 Label in Name).
-    let visibleText = (el.innerText || '').trim();
+    // A <select>'s innerText is its OPTIONS and a <textarea>'s is its
+    // VALUE — content, not a visible label. Taking innerText for those
+    // makes WCAG 2.5.3 compare an accessible name against the contents
+    // of a listbox, so a correctly labelled country picker reports
+    // sr-label-in-name because "Country" is not inside "United Kingdom
+    // India United States". Form controls always resolve through their
+    // label instead.
+    const labelBearing = (
+        el.tagName === 'SELECT' || el.tagName === 'TEXTAREA' || el.tagName === 'INPUT'
+    );
+    let visibleText = labelBearing ? '' : (el.innerText || '').trim();
     if (!visibleText) {
         // For inputs, the control itself has no text; the associated
         // <label> is the visible label.
@@ -207,6 +217,17 @@ def _walk(page, options: dict[str, Any]) -> tuple[list[dict[str, Any]], bool]:
         if wait_ms:
             page.wait_for_timeout(wait_ms)
         info = page.evaluate(_FOCUS_PROBE_JS)
+        if not isinstance(info, dict) or not info:
+            # The focus probe came back with nothing. Focus did not land
+            # on anything measurable — the page has no focusable content,
+            # or the probe itself failed. Either way this is not a tab
+            # stop. Recording it as one gives `analyze` a phantom element
+            # with no name and no role, against which every element-level
+            # keyboard rule fires: a clean page reports
+            # keyboard-no-accessible-name and keyboard-generic-focusable
+            # for an element that does not exist.
+            left_page = True
+            break
         if info.get("left_page"):
             left_page = True
             break
